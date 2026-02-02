@@ -1,0 +1,117 @@
+import { useEffect, useRef } from 'react';
+import {
+    createChart,
+    ColorType,
+    CandlestickSeries,
+    type IChartApi,
+    type ISeriesApi,
+    type Time
+} from 'lightweight-charts';
+
+export interface CandlestickData {
+    time: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+}
+
+interface TradingChartProps {
+    data: CandlestickData[];
+    symbol?: string;
+}
+
+export function TradingChart({ data, symbol = 'Price' }: TradingChartProps) {
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<IChartApi | null>(null);
+    const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+
+    useEffect(() => {
+        if (!chartContainerRef.current) return;
+
+        // Create chart
+        const chart = createChart(chartContainerRef.current, {
+            layout: {
+                background: { type: ColorType.Solid, color: '#1a1a1a' },
+                textColor: '#d1d4dc',
+            },
+            width: chartContainerRef.current.clientWidth,
+            height: 500,
+            grid: {
+                vertLines: { color: '#2a2a2a' },
+                horzLines: { color: '#2a2a2a' },
+            },
+            crosshair: {
+                mode: 1,
+            },
+            rightPriceScale: {
+                borderColor: '#2a2a2a',
+            },
+            timeScale: {
+                borderColor: '#2a2a2a',
+                timeVisible: true,
+                secondsVisible: false,
+            },
+        });
+
+        chartRef.current = chart;
+
+        // Add candlestick series
+        const candlestickSeries = chart.addSeries(CandlestickSeries, {
+            upColor: '#26a69a',
+            downColor: '#ef5350',
+            borderVisible: false,
+            wickUpColor: '#26a69a',
+            wickDownColor: '#ef5350',
+        });
+
+        seriesRef.current = candlestickSeries;
+
+        // Handle resize
+        const handleResize = () => {
+            if (chartContainerRef.current && chartRef.current) {
+                chartRef.current.applyOptions({
+                    width: chartContainerRef.current.clientWidth,
+                });
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (chartRef.current) {
+                chartRef.current.remove();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (seriesRef.current && data.length > 0) {
+            // Convert data to lightweight-charts format
+            const formattedData = data.map(d => ({
+                time: d.time as Time,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close,
+            }));
+
+            seriesRef.current.setData(formattedData);
+
+            // Fit content to visible range
+            if (chartRef.current) {
+                chartRef.current.timeScale().fitContent();
+            }
+        }
+    }, [data]);
+
+    return (
+        <div className="w-full">
+            <div className="mb-2 text-sm font-medium text-gray-300">
+                {symbol}
+            </div>
+            <div ref={chartContainerRef} className="relative rounded-lg overflow-hidden" />
+        </div>
+    );
+}
