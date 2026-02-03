@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TradingChart, CandlestickData } from './TradingChart';
+import { TradingChart, CandlestickData, Interval } from './TradingChart';
 import {
   getAllPools,
   getMarketPrice,
@@ -7,7 +7,7 @@ import {
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
-import { RefreshCw, LayoutGrid } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
@@ -22,6 +22,7 @@ export function DeepBookTrading() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [interval, setInterval] = useState<Interval>('1h');
   const network = 'mainnet';
 
   useEffect(() => {
@@ -61,7 +62,10 @@ export function DeepBookTrading() {
           setChartData([]);
         } else {
           setMarketPrice(price);
-          const ohlcvData = await getOHLCVData(selectedPool, '1h', 100, network);
+          // Determine limit based on interval
+          const limit = interval === '1m' || interval === '5m' ? 200 :
+            interval === '15m' || interval === '30m' ? 150 : 100;
+          const ohlcvData = await getOHLCVData(selectedPool, interval, limit, network);
           if (ohlcvData.length > 0) {
             setChartData(ohlcvData);
           } else {
@@ -76,9 +80,9 @@ export function DeepBookTrading() {
     };
 
     loadPoolData();
-    const interval = setInterval(loadPoolData, 15000);
-    return () => clearInterval(interval);
-  }, [selectedPool, network]);
+    const refreshTimer = window.setInterval(loadPoolData, 15000);
+    return () => window.clearInterval(refreshTimer);
+  }, [selectedPool, network, interval]);
 
   if (loading) {
     return (
@@ -127,6 +131,8 @@ export function DeepBookTrading() {
               <TradingChart
                 data={chartData}
                 symbol={`${selectedPoolInfo.baseCoin}/${selectedPoolInfo.quoteCoin}`}
+                interval={interval}
+                onIntervalChange={setInterval}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground italic text-sm">
@@ -134,29 +140,7 @@ export function DeepBookTrading() {
               </div>
             )}
 
-            {/* Floating Pool Selector (Shortcuts) */}
-            <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
-              <div className="bg-background/80 backdrop-blur border rounded-md p-1 flex space-x-1 shadow-lg">
-                {pools.slice(0, 4).map((pool) => (
-                  <button
-                    key={pool.poolName}
-                    onClick={() => setSelectedPool(pool.poolName)}
-                    className={`px-3 py-1 text-[11px] font-bold rounded transition-colors ${selectedPool === pool.poolName
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted'
-                      }`}
-                  >
-                    {pool.baseCoin}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setIsSelectorOpen(true)}
-                  className="px-2 py-1 text-[11px] font-bold rounded hover:bg-muted text-muted-foreground"
-                >
-                  <LayoutGrid className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
+
           </div>
 
           {/* Bottom Panel: Positions & History */}
