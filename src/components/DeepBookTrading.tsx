@@ -9,6 +9,7 @@ import {
   MarketPrice,
 } from '../lib/deepbook';
 import { TrendingUp, RefreshCw } from 'lucide-react';
+import { network } from '../constants';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -18,7 +19,6 @@ export function DeepBookTrading() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const network = 'mainnet'; // Can be changed to 'testnet' for testing
 
   // Load pools on mount
   useEffect(() => {
@@ -28,7 +28,7 @@ export function DeepBookTrading() {
         const availablePools = await getAllPools(network);
         console.log('Loaded pools:', availablePools);
         setPools(availablePools);
-        
+
         // Set the first pool as selected by default
         if (availablePools.length > 0) {
           // Prefer SUI_USDC if available, otherwise use first pool
@@ -42,35 +42,35 @@ export function DeepBookTrading() {
         setLoading(false);
       }
     };
-    
+
     loadPools();
   }, [network]);
 
   // Load pool data when selected pool changes
   useEffect(() => {
     if (!selectedPool) return;
-    
+
     const loadPoolData = async () => {
       try {
         setRefreshing(true);
         setError(null);
-        
+
         console.log('Loading data for pool:', selectedPool);
 
         // Get REAL market price from DeepBook Indexer
         const price = await getMarketPrice(selectedPool, network);
-        
+
         if (!price) {
           setError('Unable to fetch price data. Pool may not have recent trades.');
           setMarketPrice(null);
           setChartData([]);
         } else {
           setMarketPrice(price);
-          
+
           // Fetch REAL historical OHLCV data from DeepBook Indexer
           // Get 1-hour candles for the last ~4 days (100 candles)
           const ohlcvData = await getOHLCVData(selectedPool, '1h', 100, network);
-          
+
           if (ohlcvData.length > 0) {
             setChartData(ohlcvData);
           } else {
@@ -85,7 +85,7 @@ export function DeepBookTrading() {
         setRefreshing(false);
       }
     };
-    
+
     loadPoolData();
   }, [selectedPool, network]);
 
@@ -120,11 +120,10 @@ export function DeepBookTrading() {
               <button
                 key={pool.poolName}
                 onClick={() => setSelectedPool(pool.poolName)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedPool === pool.poolName
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedPool === pool.poolName
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
               >
                 {pool.baseCoin}/{pool.quoteCoin}
               </button>
@@ -208,10 +207,10 @@ export function DeepBookTrading() {
         <CardContent className="pt-6">
           <p className="text-sm text-blue-200">
             <strong>Live Data:</strong> All data is fetched in real-time from the{' '}
-            <a 
-              href="https://docs.sui.io/standards/deepbookv3-indexer" 
-              className="underline hover:text-blue-100" 
-              target="_blank" 
+            <a
+              href="https://docs.sui.io/standards/deepbookv3-indexer"
+              className="underline hover:text-blue-100"
+              target="_blank"
               rel="noopener noreferrer"
             >
               DeepBook V3 Indexer
