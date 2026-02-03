@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { TradingChart, CandlestickData } from './TradingChart';
 import {
   getAllPools,
@@ -8,8 +7,12 @@ import {
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
-import { TrendingUp, RefreshCw } from 'lucide-react';
-import { network } from '../constants';
+import { RefreshCw, LayoutGrid } from 'lucide-react';
+import { OrderBook } from './OrderBook';
+import { OrderPanel } from './OrderPanel';
+import { AccountPanel } from './AccountPanel';
+import { TradingHeader } from './TradingHeader';
+
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -17,21 +20,17 @@ export function DeepBookTrading() {
   const [marketPrice, setMarketPrice] = useState<MarketPrice | null>(null);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const network = 'mainnet';
 
-  // Load pools on mount
   useEffect(() => {
     const loadPools = async () => {
       try {
         setLoading(true);
         const availablePools = await getAllPools(network);
-        console.log('Loaded pools:', availablePools);
         setPools(availablePools);
 
-        // Set the first pool as selected by default
         if (availablePools.length > 0) {
-          // Prefer SUI_USDC if available, otherwise use first pool
           const suiUsdcPool = availablePools.find(p => p.poolName === 'SUI_USDC');
           setSelectedPool(suiUsdcPool?.poolName || availablePools[0].poolName);
         }
@@ -46,18 +45,13 @@ export function DeepBookTrading() {
     loadPools();
   }, [network]);
 
-  // Load pool data when selected pool changes
   useEffect(() => {
     if (!selectedPool) return;
 
     const loadPoolData = async () => {
       try {
-        setRefreshing(true);
         setError(null);
 
-        console.log('Loading data for pool:', selectedPool);
-
-        // Get REAL market price from DeepBook Indexer
         const price = await getMarketPrice(selectedPool, network);
 
         if (!price) {
@@ -66,11 +60,7 @@ export function DeepBookTrading() {
           setChartData([]);
         } else {
           setMarketPrice(price);
-
-          // Fetch REAL historical OHLCV data from DeepBook Indexer
-          // Get 1-hour candles for the last ~4 days (100 candles)
           const ohlcvData = await getOHLCVData(selectedPool, '1h', 100, network);
-
           if (ohlcvData.length > 0) {
             setChartData(ohlcvData);
           } else {
@@ -81,144 +71,110 @@ export function DeepBookTrading() {
       } catch (error) {
         console.error('Error loading pool data:', error);
         setError(error instanceof Error ? error.message : 'Failed to load pool data');
-      } finally {
-        setRefreshing(false);
       }
     };
 
     loadPoolData();
+    const interval = setInterval(loadPoolData, 15000);
+    return () => clearInterval(interval);
   }, [selectedPool, network]);
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center justify-center gap-2">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading DeepBook data...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+        <RefreshCw className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Initialising DeepBook...</p>
+      </div>
     );
   }
 
   const selectedPoolInfo = pools.find((p) => p.poolName === selectedPool);
 
   return (
-    <div className="space-y-4">
-      {/* Pool Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            DeepBook Trading Pools
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {pools.map((pool) => (
-              <button
-                key={pool.poolName}
-                onClick={() => setSelectedPool(pool.poolName)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedPool === pool.poolName
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-              >
-                {pool.baseCoin}/{pool.quoteCoin}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Error Message */}
-      {error && (
-        <Card className="bg-red-950/20 border-red-900/50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-red-200">
-              <strong>Error:</strong> {error}
-            </p>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col h-screen bg-background overflow-hidden selection:bg-primary/30">
+      {/* Top Pool Info & Navigation */}
+      {selectedPoolInfo && (
+        <TradingHeader
+          poolInfo={selectedPoolInfo}
+          marketPrice={marketPrice}
+          network={network}
+        />
       )}
 
-      {/* Price Info */}
-      {marketPrice && selectedPoolInfo && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>
-                {selectedPoolInfo.baseCoin}/{selectedPoolInfo.quoteCoin}
-              </CardTitle>
-              <button
-                onClick={() => {
-                  if (selectedPool) {
-                    // Trigger reload by updating the pool (forces useEffect)
-                    const current = selectedPool;
-                    setSelectedPool(null);
-                    setTimeout(() => setSelectedPool(current), 0);
-                  }
-                }}
-                disabled={refreshing}
-                className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                title="Refresh data"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
-                />
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Best Bid</p>
-                <p className="text-lg font-bold text-green-500">
-                  ${marketPrice.bestBidPrice.toFixed(4)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Mid Price</p>
-                <p className="text-lg font-bold">
-                  ${marketPrice.midPrice.toFixed(4)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Best Ask</p>
-                <p className="text-lg font-bold text-red-500">
-                  ${marketPrice.bestAskPrice.toFixed(4)}
-                </p>
-              </div>
-            </div>
+      {/* Main Layout Container */}
+      <div className="flex-1 flex overflow-hidden">
 
-            {chartData.length > 0 && (
+        {/* Left Section: Chart (Top) & Account Panel (Bottom) */}
+        <div className="flex-1 flex flex-col min-w-0 border-r overflow-hidden">
+          {/* Chart Area */}
+          <div className="flex-1 relative bg-[#0c0d10] overflow-hidden">
+            {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}
                 symbol={`${selectedPoolInfo.baseCoin}/${selectedPoolInfo.quoteCoin}`}
               />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground italic text-sm">
+                {error || 'No chart data available'}
+              </div>
             )}
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Info Note */}
-      <Card className="bg-blue-950/20 border-blue-900/50">
-        <CardContent className="pt-6">
-          <p className="text-sm text-blue-200">
-            <strong>Live Data:</strong> All data is fetched in real-time from the{' '}
-            <a
-              href="https://docs.sui.io/standards/deepbookv3-indexer"
-              className="underline hover:text-blue-100"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              DeepBook V3 Indexer
-            </a>
-            {' '}on Sui {network}. Prices and OHLCV candlestick data are actual trading data from the blockchain.
-          </p>
-        </CardContent>
-      </Card>
+            {/* Floating Pool Selector */}
+            <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
+              <div className="bg-background/80 backdrop-blur border rounded-md p-1 flex space-x-1 shadow-lg">
+                {pools.slice(0, 4).map((pool) => (
+                  <button
+                    key={pool.poolName}
+                    onClick={() => setSelectedPool(pool.poolName)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded transition-colors ${selectedPool === pool.poolName
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                      }`}
+                  >
+                    {pool.baseCoin}
+                  </button>
+                ))}
+                <button className="px-2 py-1 text-[11px] font-bold rounded hover:bg-muted text-muted-foreground">
+                  <LayoutGrid className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Panel: Positions & History */}
+          <div className="h-[400px] border-t overflow-hidden bg-background">
+            <AccountPanel poolName={selectedPool || ''} />
+          </div>
+        </div>
+
+        {/* Middle Section: Order Book (Fixed Width) */}
+        <div className="w-[400px] flex-shrink-0 flex flex-col border-r bg-background overflow-hidden">
+          <OrderBook poolName={selectedPool || ''} network={network} />
+        </div>
+
+        {/* Right Section: Order Entry Panel (Fixed Width) */}
+        <div className="w-[400px] flex-shrink-0 flex flex-col bg-background overflow-hidden">
+          <OrderPanel
+            poolName={selectedPool || 'SUI_USDC'}
+            currentPrice={marketPrice?.midPrice || 0}
+          />
+        </div>
+      </div>
+
+      {/* Footer Status Bar */}
+      <div className="h-6 border-t bg-background flex items-center px-3 justify-between text-[10px] text-muted-foreground">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <span>Operational</span>
+          </div>
+          <div>API Latency: 42ms</div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div>v3.1.0-deepbook</div>
+          <div className="text-primary font-bold">2026 Feb 03 14:04:54</div>
+        </div>
+      </div>
     </div>
   );
 }

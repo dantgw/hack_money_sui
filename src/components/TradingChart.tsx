@@ -26,65 +26,62 @@ export function TradingChart({ data, symbol = 'Price' }: TradingChartProps) {
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
 
-    useEffect(() => {
-        if (!chartContainerRef.current) return;
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
 
-        // Create chart
-        const chart = createChart(chartContainerRef.current, {
-            layout: {
-                background: { type: ColorType.Solid, color: '#1a1a1a' },
-                textColor: '#d1d4dc',
-            },
-            width: chartContainerRef.current.clientWidth,
-            height: 500,
-            grid: {
-                vertLines: { color: '#2a2a2a' },
-                horzLines: { color: '#2a2a2a' },
-            },
-            crosshair: {
-                mode: 1,
-            },
-            rightPriceScale: {
-                borderColor: '#2a2a2a',
-            },
-            timeScale: {
-                borderColor: '#2a2a2a',
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+    // Create chart with initial size
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#0c0d10' },
+        textColor: '#d1d4dc',
+      },
+      grid: {
+        vertLines: { color: '#1a1a1a' },
+        horzLines: { color: '#1a1a1a' },
+      },
+      crosshair: {
+        mode: 1,
+      },
+      rightPriceScale: {
+        borderColor: '#2a2a2a',
+      },
+      timeScale: {
+        borderColor: '#2a2a2a',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
 
-        chartRef.current = chart;
+    chartRef.current = chart;
 
-        // Add candlestick series
-        const candlestickSeries = chart.addSeries(CandlestickSeries, {
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
+    // Add candlestick series
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    });
 
-        seriesRef.current = candlestickSeries;
+    seriesRef.current = candlestickSeries;
 
-        // Handle resize
-        const handleResize = () => {
-            if (chartContainerRef.current && chartRef.current) {
-                chartRef.current.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
-        };
+    // Use ResizeObserver for reliable responsive sizing
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries.length === 0 || !entries[0].contentRect) return;
+      const { width, height } = entries[0].contentRect;
+      chart.applyOptions({ width, height });
+      chart.timeScale().fitContent();
+    });
 
-        window.addEventListener('resize', handleResize);
+    resizeObserver.observe(chartContainerRef.current);
 
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            if (chartRef.current) {
-                chartRef.current.remove();
-            }
-        };
-    }, []);
+    return () => {
+      resizeObserver.disconnect();
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
+    };
+  }, []);
 
     useEffect(() => {
         if (seriesRef.current && data.length > 0) {
@@ -106,12 +103,7 @@ export function TradingChart({ data, symbol = 'Price' }: TradingChartProps) {
         }
     }, [data]);
 
-    return (
-        <div className="w-full">
-            <div className="mb-2 text-sm font-medium text-gray-300">
-                {symbol}
-            </div>
-            <div ref={chartContainerRef} className="relative rounded-lg overflow-hidden" />
-        </div>
-    );
+  return (
+    <div ref={chartContainerRef} className="absolute inset-0 w-full h-full" />
+  );
 }
