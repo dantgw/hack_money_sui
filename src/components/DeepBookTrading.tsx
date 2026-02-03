@@ -23,6 +23,7 @@ export function DeepBookTrading() {
   const [error, setError] = useState<string | null>(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [interval, setInterval] = useState<Interval>('1h');
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const network = 'mainnet';
 
   useEffect(() => {
@@ -62,10 +63,11 @@ export function DeepBookTrading() {
           setChartData([]);
         } else {
           setMarketPrice(price);
-          // Determine limit based on interval
-          const limit = interval === '1m' || interval === '5m' ? 200 :
-            interval === '15m' || interval === '30m' ? 150 : 100;
-          const ohlcvData = await getOHLCVData(selectedPool, interval, limit, network);
+          // Always request 200 candles regardless of interval
+          // Note: API may return fewer candles if historical data is limited
+          const limit = 500;
+          const ohlcvData = await getOHLCVData(selectedPool, interval, limit, undefined, undefined, network);
+          console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
           if (ohlcvData.length > 0) {
             setChartData(ohlcvData);
           } else {
@@ -83,6 +85,94 @@ export function DeepBookTrading() {
     const refreshTimer = window.setInterval(loadPoolData, 15000);
     return () => window.clearInterval(refreshTimer);
   }, [selectedPool, network, interval]);
+
+  // Handle loading more historical data when scrolling back
+  const handleLoadMore = async (oldestTimestamp: number) => {
+    if (!selectedPool || isLoadingMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      // Always request 200 candles regardless of interval (same as initial load)
+      const limit = 200;
+
+      // Calculate how far back to fetch based on interval
+      // Fetch enough candles to cover a reasonable time range
+      const intervalSeconds = interval === '1m' ? 60 :
+        interval === '5m' ? 300 :
+          interval === '15m' ? 900 :
+            interval === '30m' ? 1800 :
+              interval === '1h' ? 3600 :
+                interval === '4h' ? 14400 :
+                  interval === '1d' ? 86400 : 604800;
+
+      // Convert timestamp to seconds if it's in milliseconds
+      // API expects Unix timestamps in seconds
+      // Unix timestamps in seconds are typically 10 digits (before year 2286)
+      // If timestamp is 13+ digits, it's in milliseconds
+      // Check: if timestamp >= 10000000000, it's likely milliseconds (13+ digits)
+      const oldestTimestampSeconds = oldestTimestamp >= 10000000000
+        ? Math.floor(oldestTimestamp / 1000)
+        : oldestTimestamp;
+
+      // Calculate start_time to go back enough to fetch the requested limit
+      // end_time should be the oldest timestamp (exclusive, so we get candles before it)
+      const endTime = oldestTimestampSeconds;
+      const startTime = oldestTimestampSeconds - (limit * intervalSeconds);
+
+      console.log('Loading more candles:', {
+        oldestTimestamp,
+        oldestTimestampSeconds,
+        startTime,
+        endTime,
+        limit,
+        intervalSeconds,
+        timeRangeHours: (endTime - startTime) / 3600
+      });
+
+      // Fetch older candles before the given timestamp
+      const olderCandles = await getOHLCVData(
+        selectedPool,
+        interval,
+        limit,
+        startTime,
+        endTime,
+        network
+      );
+
+      if (olderCandles.length > 0) {
+        console.log('[LoadMore] Successfully loaded', olderCandles.length, 'older candles');
+
+        // Merge with existing data, ensuring no duplicates and maintaining chronological order
+        setChartData(prevData => {
+          // Create a map of existing timestamps for quick lookup
+          const existingTimes = new Set(prevData.map(d => d.time));
+
+          // Filter out duplicates and combine
+          const newCandles = olderCandles.filter(c => !existingTimes.has(c.time));
+          const combined = [...newCandles, ...prevData];
+
+          // Sort by time to ensure chronological order
+          combined.sort((a, b) => a.time - b.time);
+
+          console.log('[LoadMore] Data merged:', {
+            previousCount: prevData.length,
+            newCandlesCount: newCandles.length,
+            totalCount: combined.length,
+            newOldestTime: combined[0]?.time,
+            newOldestDate: combined[0] ? new Date(combined[0].time * 1000).toISOString() : 'N/A'
+          });
+
+          return combined;
+        });
+      } else {
+        console.log('[LoadMore] No older candles returned from API - may have reached the beginning of available data');
+      }
+    } catch (error) {
+      console.error('Error loading more historical data:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -133,6 +223,9 @@ export function DeepBookTrading() {
                 symbol={`${selectedPoolInfo.baseCoin}/${selectedPoolInfo.quoteCoin}`}
                 interval={interval}
                 onIntervalChange={setInterval}
+                onLoadMore={handleLoadMore}
+                tickSize={selectedPoolInfo.tickSize}
+                quoteAssetDecimals={selectedPoolInfo.quoteAssetDecimals}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground italic text-sm">
