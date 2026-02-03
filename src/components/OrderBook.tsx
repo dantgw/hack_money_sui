@@ -14,23 +14,25 @@ export function OrderBook({ poolName, network }: OrderBookProps) {
     const [trades, setTrades] = useState<Trade[]>([]);
 
     useEffect(() => {
-        const fetchBook = async () => {
-            const book = await getOrderBook(poolName, network);
-            setOrderBookData(book);
+        // Fetch order book and trades together to ensure they're synchronized
+        const fetchBookAndTrades = async () => {
+            try {
+                // Fetch both simultaneously using Promise.all to ensure they're in sync
+                const [book, recentTrades] = await Promise.all([
+                    getOrderBook(poolName, network),
+                    getRecentTrades(poolName, network)
+                ]);
+
+                setOrderBookData(book);
+                setTrades(recentTrades);
+            } catch (error) {
+                console.error('Error fetching order book and trades:', error);
+            }
         };
 
-        const fetchTrades = async () => {
-            const recentTrades = await getRecentTrades(poolName, network);
-            setTrades(recentTrades);
-        };
+        fetchBookAndTrades();
 
-        fetchBook();
-        fetchTrades();
-
-        const interval = setInterval(() => {
-            fetchBook();
-            fetchTrades();
-        }, 5000);
+        const interval = setInterval(fetchBookAndTrades, 5000);
 
         return () => clearInterval(interval);
     }, [poolName, network]);

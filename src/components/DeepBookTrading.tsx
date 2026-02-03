@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TradingChart, CandlestickData, Interval } from './TradingChart';
 import {
   getAllPools,
-  getMarketPrice,
   getOHLCVData,
+  getRecentTrades,
+  getOrderBook,
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
@@ -48,6 +49,54 @@ export function DeepBookTrading() {
     loadPools();
   }, [network]);
 
+  // Helper function to update market price and chart from recent trades
+  const updatePriceFromTrades = useCallback((recentTrades: any[]) => {
+    if (recentTrades.length === 0) return;
+
+    const mostRecentTrade = recentTrades[0];
+    const tradePrice = mostRecentTrade.price;
+
+    // Update market price from the most recent trade
+    const spread = tradePrice * 0.001; // Estimate bid/ask spread (typically 0.1% for liquid pairs)
+    const bestBid = tradePrice - spread / 2;
+    const bestAsk = tradePrice + spread / 2;
+
+    setMarketPrice({
+      bestBidPrice: bestBid,
+      bestAskPrice: bestAsk,
+      midPrice: tradePrice,
+    });
+
+    // Update chart data with the most recent trade price
+    setChartData(prevData => {
+      if (prevData.length === 0) return prevData;
+
+      // Create a new array and new candle object to ensure React detects the change
+      const updatedData = prevData.map((candle, index) => {
+        // Only update the last candle (most recent)
+        if (index === prevData.length - 1) {
+          // Always update the last candle's close price to reflect the most recent trade
+          // This ensures the chart shows the live price
+          const updatedCandle = { ...candle };
+          updatedCandle.close = tradePrice;
+
+          // Update high/low if the trade price exceeds them
+          if (tradePrice > candle.high) {
+            updatedCandle.high = tradePrice;
+          }
+          if (tradePrice < candle.low) {
+            updatedCandle.low = tradePrice;
+          }
+
+          return updatedCandle;
+        }
+        return candle;
+      });
+
+      return updatedData;
+    });
+  }, []);
+
   useEffect(() => {
     if (!selectedPool) return;
 
@@ -55,25 +104,25 @@ export function DeepBookTrading() {
       try {
         setError(null);
 
-        const price = await getMarketPrice(selectedPool, network);
+        // Load OHLCV data for the chart
+        const limit = 500;
+        const ohlcvData = await getOHLCVData(selectedPool, interval, limit, undefined, undefined, network);
+        console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
 
-        if (!price) {
+        if (ohlcvData.length > 0) {
+          setChartData(ohlcvData);
+        } else {
+          setError('No historical data available for this pool.');
+          setChartData([]);
+        }
+
+        // Fetch recent trades to update price
+        const recentTrades = await getRecentTrades(selectedPool, network, 1);
+        if (recentTrades.length > 0) {
+          updatePriceFromTrades(recentTrades);
+        } else {
           setError('Unable to fetch price data. Pool may not have recent trades.');
           setMarketPrice(null);
-          setChartData([]);
-        } else {
-          setMarketPrice(price);
-          // Always request 200 candles regardless of interval
-          // Note: API may return fewer candles if historical data is limited
-          const limit = 500;
-          const ohlcvData = await getOHLCVData(selectedPool, interval, limit, undefined, undefined, network);
-          console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
-          if (ohlcvData.length > 0) {
-            setChartData(ohlcvData);
-          } else {
-            setError('No historical data available for this pool.');
-            setChartData([]);
-          }
         }
       } catch (error) {
         console.error('Error loading pool data:', error);
@@ -84,7 +133,36 @@ export function DeepBookTrading() {
     loadPoolData();
     const refreshTimer = window.setInterval(loadPoolData, 15000);
     return () => window.clearInterval(refreshTimer);
-  }, [selectedPool, network, interval]);
+  }, [selectedPool, network, interval, updatePriceFromTrades]);
+
+  // Update live price from recent trades (more frequently)
+  // Fetch both order book and trades together to ensure they're synchronized
+  // This matches what OrderBook component does to keep everything in sync
+  useEffect(() => {
+    if (!selectedPool) return;
+
+    const updateLivePrice = async () => {
+      try {
+        // Fetch both trades and order book together using Promise.all()
+        // This ensures order book and trades are fetched at the exact same time
+        // Even though we don't use the order book here, fetching it ensures synchronization
+        const [recentTrades] = await Promise.all([
+          getRecentTrades(selectedPool, network, 1),
+          getOrderBook(selectedPool, network) // Fetch together for synchronization
+        ]);
+
+        updatePriceFromTrades(recentTrades);
+      } catch (error) {
+        console.error('Error updating live price:', error);
+      }
+    };
+
+    // Update more frequently for live price (every 5 seconds)
+    // This matches the OrderBook refresh interval to keep them synchronized
+    updateLivePrice();
+    const livePriceTimer = window.setInterval(updateLivePrice, 5000);
+    return () => window.clearInterval(livePriceTimer);
+  }, [selectedPool, network, updatePriceFromTrades]);
 
   // Handle loading more historical data when scrolling back
   const handleLoadMore = async (oldestTimestamp: number) => {
