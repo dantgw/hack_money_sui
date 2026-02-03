@@ -4,7 +4,7 @@ import { TradingChart, CandlestickData } from './TradingChart';
 import {
   getAllPools,
   getMarketPrice,
-  generateMockPriceHistory,
+  getOHLCVData,
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
@@ -12,40 +12,82 @@ import { TrendingUp, RefreshCw } from 'lucide-react';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
-  const [selectedPool, setSelectedPool] = useState<string>('SUI_USDC');
+  const [selectedPool, setSelectedPool] = useState<string | null>(null);
   const [marketPrice, setMarketPrice] = useState<MarketPrice | null>(null);
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const network = 'mainnet'; // Can be changed to 'testnet' for testing
 
-  const loadPoolData = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Get available pools
-      const availablePools = await getAllPools();
-      setPools(availablePools);
-
-      // Get market price for selected pool
-      const price = await getMarketPrice(selectedPool);
-      setMarketPrice(price);
-
-      // Generate historical data (in production, fetch from indexer)
-      const selectedPoolInfo = availablePools.find((p) => p.poolKey === selectedPool);
-      const basePrice = selectedPool === 'DEEP_SUI' ? 0.045 : selectedPool === 'SUI_USDC' ? 2.45 : 0.11;
-      const historicalData = generateMockPriceHistory(30, basePrice);
-      setChartData(historicalData);
-    } catch (error) {
-      console.error('Error loading pool data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+  // Load pools on mount
   useEffect(() => {
+    const loadPools = async () => {
+      try {
+        setLoading(true);
+        const availablePools = await getAllPools(network);
+        console.log('Loaded pools:', availablePools);
+        setPools(availablePools);
+        
+        // Set the first pool as selected by default
+        if (availablePools.length > 0) {
+          // Prefer SUI_USDC if available, otherwise use first pool
+          const suiUsdcPool = availablePools.find(p => p.poolName === 'SUI_USDC');
+          setSelectedPool(suiUsdcPool?.poolName || availablePools[0].poolName);
+        }
+      } catch (error) {
+        console.error('Error loading pools:', error);
+        setError('Failed to load pools');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPools();
+  }, [network]);
+
+  // Load pool data when selected pool changes
+  useEffect(() => {
+    if (!selectedPool) return;
+    
+    const loadPoolData = async () => {
+      try {
+        setRefreshing(true);
+        setError(null);
+        
+        console.log('Loading data for pool:', selectedPool);
+
+        // Get REAL market price from DeepBook Indexer
+        const price = await getMarketPrice(selectedPool, network);
+        
+        if (!price) {
+          setError('Unable to fetch price data. Pool may not have recent trades.');
+          setMarketPrice(null);
+          setChartData([]);
+        } else {
+          setMarketPrice(price);
+          
+          // Fetch REAL historical OHLCV data from DeepBook Indexer
+          // Get 1-hour candles for the last ~4 days (100 candles)
+          const ohlcvData = await getOHLCVData(selectedPool, '1h', 100, network);
+          
+          if (ohlcvData.length > 0) {
+            setChartData(ohlcvData);
+          } else {
+            setError('No historical data available for this pool.');
+            setChartData([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading pool data:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load pool data');
+      } finally {
+        setRefreshing(false);
+      }
+    };
+    
     loadPoolData();
-  }, [selectedPool]);
+  }, [selectedPool, network]);
 
   if (loading) {
     return (
@@ -60,7 +102,7 @@ export function DeepBookTrading() {
     );
   }
 
-  const selectedPoolInfo = pools.find((p) => p.poolKey === selectedPool);
+  const selectedPoolInfo = pools.find((p) => p.poolName === selectedPool);
 
   return (
     <div className="space-y-4">
@@ -76,10 +118,10 @@ export function DeepBookTrading() {
           <div className="flex gap-2 flex-wrap">
             {pools.map((pool) => (
               <button
-                key={pool.poolKey}
-                onClick={() => setSelectedPool(pool.poolKey)}
+                key={pool.poolName}
+                onClick={() => setSelectedPool(pool.poolName)}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedPool === pool.poolKey
+                  selectedPool === pool.poolName
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}
@@ -91,6 +133,17 @@ export function DeepBookTrading() {
         </CardContent>
       </Card>
 
+      {/* Error Message */}
+      {error && (
+        <Card className="bg-red-950/20 border-red-900/50">
+          <CardContent className="pt-6">
+            <p className="text-sm text-red-200">
+              <strong>Error:</strong> {error}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Price Info */}
       {marketPrice && selectedPoolInfo && (
         <Card>
@@ -100,7 +153,14 @@ export function DeepBookTrading() {
                 {selectedPoolInfo.baseCoin}/{selectedPoolInfo.quoteCoin}
               </CardTitle>
               <button
-                onClick={loadPoolData}
+                onClick={() => {
+                  if (selectedPool) {
+                    // Trigger reload by updating the pool (forces useEffect)
+                    const current = selectedPool;
+                    setSelectedPool(null);
+                    setTimeout(() => setSelectedPool(current), 0);
+                  }
+                }}
                 disabled={refreshing}
                 className="p-2 rounded-lg hover:bg-secondary transition-colors"
                 title="Refresh data"
@@ -116,27 +176,29 @@ export function DeepBookTrading() {
               <div>
                 <p className="text-sm text-muted-foreground">Best Bid</p>
                 <p className="text-lg font-bold text-green-500">
-                  {marketPrice.bestBidPrice.toFixed(4)}
+                  ${marketPrice.bestBidPrice.toFixed(4)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Mid Price</p>
                 <p className="text-lg font-bold">
-                  {marketPrice.midPrice.toFixed(4)}
+                  ${marketPrice.midPrice.toFixed(4)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Best Ask</p>
                 <p className="text-lg font-bold text-red-500">
-                  {marketPrice.bestAskPrice.toFixed(4)}
+                  ${marketPrice.bestAskPrice.toFixed(4)}
                 </p>
               </div>
             </div>
 
-            <TradingChart
-              data={chartData}
-              symbol={`${selectedPoolInfo.baseCoin}/${selectedPoolInfo.quoteCoin}`}
-            />
+            {chartData.length > 0 && (
+              <TradingChart
+                data={chartData}
+                symbol={`${selectedPoolInfo.baseCoin}/${selectedPoolInfo.quoteCoin}`}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -145,9 +207,16 @@ export function DeepBookTrading() {
       <Card className="bg-blue-950/20 border-blue-900/50">
         <CardContent className="pt-6">
           <p className="text-sm text-blue-200">
-            <strong>Note:</strong> This demo uses simulated historical data. In production,
-            you would fetch real-time price data from DeepBook pools and historical data
-            from a DeepBook indexer. The prices shown are for demonstration purposes.
+            <strong>Live Data:</strong> All data is fetched in real-time from the{' '}
+            <a 
+              href="https://docs.sui.io/standards/deepbookv3-indexer" 
+              className="underline hover:text-blue-100" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              DeepBook V3 Indexer
+            </a>
+            {' '}on Sui {network}. Prices and OHLCV candlestick data are actual trading data from the blockchain.
           </p>
         </CardContent>
       </Card>

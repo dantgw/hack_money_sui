@@ -1,10 +1,20 @@
-import type { ClientWithCoreApi } from '@mysten/sui/client';
+// DeepBook Indexer endpoints
+// Reference: https://docs.sui.io/standards/deepbookv3-indexer
+const INDEXER_URLS = {
+  mainnet: "https://deepbook-indexer.mainnet.mystenlabs.com",
+  testnet: "https://deepbook-indexer.testnet.mystenlabs.com",
+};
 
 export interface PoolInfo {
   poolId: string;
+  poolName: string;
   baseCoin: string;
   quoteCoin: string;
-  poolKey: string;
+  baseAssetDecimals: number;
+  quoteAssetDecimals: number;
+  minSize: number;
+  lotSize: number;
+  tickSize: number;
 }
 
 export interface MarketPrice {
@@ -23,45 +33,49 @@ export interface OrderBookData {
   asks: OrderBookLevel[];
 }
 
-/**
- * Initialize DeepBook functionality with the dApp kit's client
- * This avoids version conflicts by using the same client instance
- */
-export function initDeepBook(client: ClientWithCoreApi) {
-  return {
-    client,
-  };
+export interface CandleData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
 /**
- * Get all available pools from DeepBook
- * These are the main pools available on DeepBook V3
+ * Get the indexer URL for the specified network
  */
-export async function getAllPools(): Promise<PoolInfo[]> {
-  try {
-    // DeepBook V3 has predefined pools, here are some common ones
-    const commonPools: PoolInfo[] = [
-      {
-        poolId: 'DEEP_SUI',
-        baseCoin: 'DEEP',
-        quoteCoin: 'SUI',
-        poolKey: 'DEEP_SUI',
-      },
-      {
-        poolId: 'SUI_USDC',
-        baseCoin: 'SUI',
-        quoteCoin: 'USDC',
-        poolKey: 'SUI_USDC',
-      },
-      {
-        poolId: 'DEEP_USDC',
-        baseCoin: 'DEEP',
-        quoteCoin: 'USDC',
-        poolKey: 'DEEP_USDC',
-      },
-    ];
+function getIndexerUrl(network: 'mainnet' | 'testnet' = 'mainnet'): string {
+  return INDEXER_URLS[network];
+}
 
-    return commonPools;
+/**
+ * Get all available pools from DeepBook Indexer
+ * Reference: https://docs.sui.io/standards/deepbookv3-indexer
+ */
+export async function getAllPools(network: 'mainnet' | 'testnet' = 'mainnet'): Promise<PoolInfo[]> {
+  try {
+    const indexerUrl = getIndexerUrl(network);
+    const response = await fetch(`${indexerUrl}/get_pools`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch pools: ${response.statusText}`);
+    }
+    
+    const pools = await response.json();
+    console.log("get pool:", pools);
+    // Transform the response to our PoolInfo format
+    return pools.map((pool: any) => ({
+      poolId: pool.pool_id,
+      poolName: pool.pool_name,
+      baseCoin: pool.base_asset_symbol,
+      quoteCoin: pool.quote_asset_symbol,
+      baseAssetDecimals: pool.base_asset_decimals,
+      quoteAssetDecimals: pool.quote_asset_decimals,
+      minSize: pool.min_size,
+      lotSize: pool.lot_size,
+      tickSize: pool.tick_size,
+    }));
   } catch (error) {
     console.error('Error fetching pools:', error);
     return [];
@@ -69,102 +83,121 @@ export async function getAllPools(): Promise<PoolInfo[]> {
 }
 
 /**
- * Get market price for a specific pool
+ * Get market price from the latest OHLCV data
+ * Uses the most recent candle's close price as the current market price
  */
 export async function getMarketPrice(
-  poolKey: string
+  poolName: string,
+  network: 'mainnet' | 'testnet' = 'mainnet'
 ): Promise<MarketPrice | null> {
   try {
-    // Query the order book to get best bid/ask
-    const orderBook = await getOrderBook(poolKey);
+    console.log('Fetching market price for pool:', poolName);
     
-    if (!orderBook || orderBook.bids.length === 0 || orderBook.asks.length === 0) {
+    // Get the latest 1-minute candle to get current price
+    const candles = await getOHLCVData(poolName, '1m', 1, network);
+    
+    if (!candles || candles.length === 0) {
+      console.warn('No candles returned for pool:', poolName);
       return null;
     }
 
-    const bestBid = orderBook.bids[0].price;
-    const bestAsk = orderBook.asks[0].price;
-    const midPrice = (bestBid + bestAsk) / 2;
+    const latestCandle = candles[candles.length - 1];
+    const currentPrice = latestCandle.close;
+    
+    console.log('Current price for', poolName, ':', currentPrice);
+    
+    // Estimate bid/ask spread (typically 0.1% for liquid pairs)
+    const spread = currentPrice * 0.001;
+    const bestBid = currentPrice - spread / 2;
+    const bestAsk = currentPrice + spread / 2;
 
     return {
       bestBidPrice: bestBid,
       bestAskPrice: bestAsk,
-      midPrice,
+      midPrice: currentPrice,
     };
   } catch (error) {
-    console.error('Error fetching market price:', error);
+    console.error('Error fetching market price for', poolName, ':', error);
     return null;
   }
 }
 
 /**
- * Get level 2 order book data
- * In production, you would query the actual DeepBook pool state using the Sui client
- * For now, returning mock data to demonstrate the UI
+ * Get OHLCV candlestick data from DeepBook Indexer
+ * Reference: https://docs.sui.io/standards/deepbookv3-indexer
+ * 
+ * @param poolName - Pool name (e.g., "SUI_USDC")
+ * @param interval - Candle interval: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w
+ * @param limit - Number of candles to return
+ * @param network - Network to query (mainnet or testnet)
  */
-export async function getOrderBook(
-  poolKey: string
-): Promise<OrderBookData | null> {
+export async function getOHLCVData(
+  poolName: string,
+  interval: '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' = '1h',
+  limit: number = 100,
+  network: 'mainnet' | 'testnet' = 'mainnet'
+): Promise<CandleData[]> {
   try {
-    // In production, you would:
-    // 1. Get the pool address from the DeepBook registry
-    // 2. Query the pool object using client.getObject()
-    // 3. Parse the order book from the pool's dynamic fields
+    const indexerUrl = getIndexerUrl(network);
+    const url = `${indexerUrl}/ohclv/${poolName}?interval=${interval}&limit=${limit}`;
+    console.log('Fetching OHLCV data from:', url);
     
-    // For demonstration, return mock data based on the pool
-    const basePrice = poolKey === 'DEEP_SUI' ? 0.045 : poolKey === 'SUI_USDC' ? 2.45 : 0.11;
+    const response = await fetch(url);
     
-    const mockBids: OrderBookLevel[] = [
-      { price: basePrice * 0.999, quantity: 1000 },
-      { price: basePrice * 0.998, quantity: 1500 },
-      { price: basePrice * 0.997, quantity: 2000 },
-      { price: basePrice * 0.996, quantity: 2500 },
-      { price: basePrice * 0.995, quantity: 3000 },
-    ];
-
-    const mockAsks: OrderBookLevel[] = [
-      { price: basePrice * 1.001, quantity: 1200 },
-      { price: basePrice * 1.002, quantity: 1800 },
-      { price: basePrice * 1.003, quantity: 2200 },
-      { price: basePrice * 1.004, quantity: 2800 },
-      { price: basePrice * 1.005, quantity: 3500 },
-    ];
-
-    return {
-      bids: mockBids,
-      asks: mockAsks,
-    };
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OHLCV fetch failed:', response.status, errorText);
+      throw new Error(`Failed to fetch OHLCV data: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('OHLCV data received:', data.candles?.length, 'candles');
+    
+    // Transform the candles array to our CandleData format
+    // Format: [timestamp, open, high, low, close, volume]
+    const candles = data.candles.map((candle: number[]) => ({
+      time: candle[0],
+      open: candle[1],
+      high: candle[2],
+      low: candle[3],
+      close: candle[4],
+      volume: candle[5],
+    }));
+    
+    // Sort by time in ascending order (required by lightweight-charts)
+    candles.sort((a: CandleData, b: CandleData) => a.time - b.time);
+    
+    return candles;
   } catch (error) {
-    console.error('Error fetching order book:', error);
-    return null;
+    console.error('Error fetching OHLCV data for', poolName, ':', error);
+    return [];
   }
 }
 
 /**
- * Generate mock historical price data for demonstration
- * In production, you'd fetch real historical data from an indexer
+ * Get trade count for a time range
+ * Reference: https://docs.sui.io/standards/deepbookv3-indexer
  */
-export function generateMockPriceHistory(days: number = 30, basePrice: number = 2.5) {
-  const data = [];
-  const now = Date.now();
-  const dayMs = 24 * 60 * 60 * 1000;
-  let price = basePrice;
-
-  for (let i = days; i >= 0; i--) {
-    const time = now - i * dayMs;
-    const volatility = 0.05;
-    const change = (Math.random() - 0.5) * volatility * price;
-    price = Math.max(basePrice * 0.5, price + change);
-
-    data.push({
-      time: Math.floor(time / 1000),
-      open: price,
-      high: price * (1 + Math.random() * 0.02),
-      low: price * (1 - Math.random() * 0.02),
-      close: price + change,
-      volume: Math.random() * 10000,
-    });
+export async function getTradeCount(
+  startTime?: number,
+  endTime?: number,
+  network: 'mainnet' | 'testnet' = 'mainnet'
+): Promise<number> {
+  try {
+    const indexerUrl = getIndexerUrl(network);
+    const params = new URLSearchParams();
+    if (startTime) params.append('start_time', startTime.toString());
+    if (endTime) params.append('end_time', endTime.toString());
+    
+    const response = await fetch(`${indexerUrl}/trade_count?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch trade count: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching trade count:', error);
+    return 0;
   }
-
-  return data;
 }
