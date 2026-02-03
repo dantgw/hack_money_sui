@@ -1,26 +1,34 @@
 import { MarketPrice, PoolInfo } from '../lib/deepbook';
-import { ConnectButton } from "@mysten/dapp-kit-react";
-import { ChevronLeft } from 'lucide-react';
+
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TradingHeaderProps {
     poolInfo: PoolInfo;
     marketPrice: MarketPrice | null;
     network: string;
+    onOpenSelector: () => void;
+    isSelectorOpen: boolean;
 }
 
-export function TradingHeader({ poolInfo, marketPrice, network }: TradingHeaderProps) {
+export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, isSelectorOpen }: TradingHeaderProps) {
     return (
         <div className="flex items-center justify-between p-2 bg-background border-b text-[12px]">
-            <div className="flex items-center space-x-6">
-
-                <div className="flex items-center space-x-2 mr-2">
-                    <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">
-                        {poolInfo.baseCoin[0]}
+            <div className="flex items-center space-x-6 pl-2">
+                <div className="flex items-center space-x-1 group cursor-pointer" onClick={onOpenSelector}>
+                    <div className="flex items-center space-x-2 mr-1">
+                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">
+                            {poolInfo.baseCoin[0]}
+                        </div>
+                        <div className="font-bold text-base transition-colors group-hover:text-primary">
+                            {poolInfo.baseCoin}-{poolInfo.quoteCoin}
+                        </div>
                     </div>
-                    <div className="font-bold text-base">{poolInfo.baseCoin}-{poolInfo.quoteCoin}</div>
+                    <div className="flex flex-col text-muted-foreground group-hover:text-primary transition-colors">
+                        {isSelectorOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </div>
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col border-l pl-4">
                     <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-tighter">Mark Price</span>
                     <span className={`font-bold ${marketPrice ? 'text-green-400' : ''}`}>
                         {marketPrice ? marketPrice.midPrice.toFixed(4) : '---'}

@@ -12,7 +12,7 @@ import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
 import { TradingHeader } from './TradingHeader';
-
+import { PoolSelectorPopup } from './PoolSelectorPopup';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -21,6 +21,7 @@ export function DeepBookTrading() {
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const network = 'mainnet';
 
   useEffect(() => {
@@ -91,21 +92,35 @@ export function DeepBookTrading() {
   const selectedPoolInfo = pools.find((p) => p.poolName === selectedPool);
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden selection:bg-primary/30">
-      {/* Top Pool Info & Navigation */}
-      {selectedPoolInfo && (
-        <TradingHeader
-          poolInfo={selectedPoolInfo}
-          marketPrice={marketPrice}
-          network={network}
-        />
-      )}
-
+    <div className="flex flex-col h-screen bg-background overflow-hidden selection:bg-primary/30 relative">
       {/* Main Layout Container */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* Left Section: Chart (Top) & Account Panel (Bottom) */}
+        {/* Left Section: Header, Chart (Top) & Account Panel (Bottom) */}
         <div className="flex-1 flex flex-col min-w-0 border-r overflow-hidden">
+          {/* Symbol Header - Now inside the left section */}
+          {selectedPoolInfo && (
+            <div className="relative">
+              <TradingHeader
+                poolInfo={selectedPoolInfo}
+                marketPrice={marketPrice}
+                network={network}
+                onOpenSelector={() => setIsSelectorOpen(!isSelectorOpen)}
+                isSelectorOpen={isSelectorOpen}
+              />
+              <PoolSelectorPopup
+                isOpen={isSelectorOpen}
+                onClose={() => setIsSelectorOpen(false)}
+                pools={pools}
+                onSelect={(poolName) => {
+                  setSelectedPool(poolName);
+                  setIsSelectorOpen(false);
+                }}
+                selectedPoolName={selectedPool}
+              />
+            </div>
+          )}
+
           {/* Chart Area */}
           <div className="flex-1 relative bg-[#0c0d10] overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
@@ -119,7 +134,7 @@ export function DeepBookTrading() {
               </div>
             )}
 
-            {/* Floating Pool Selector */}
+            {/* Floating Pool Selector (Shortcuts) */}
             <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
               <div className="bg-background/80 backdrop-blur border rounded-md p-1 flex space-x-1 shadow-lg">
                 {pools.slice(0, 4).map((pool) => (
@@ -134,7 +149,10 @@ export function DeepBookTrading() {
                     {pool.baseCoin}
                   </button>
                 ))}
-                <button className="px-2 py-1 text-[11px] font-bold rounded hover:bg-muted text-muted-foreground">
+                <button
+                  onClick={() => setIsSelectorOpen(true)}
+                  className="px-2 py-1 text-[11px] font-bold rounded hover:bg-muted text-muted-foreground"
+                >
                   <LayoutGrid className="w-3 h-3" />
                 </button>
               </div>
@@ -142,18 +160,18 @@ export function DeepBookTrading() {
           </div>
 
           {/* Bottom Panel: Positions & History */}
-          <div className="h-[400px] border-t overflow-hidden bg-background">
+          <div className="h-[300px] border-t overflow-hidden bg-background">
             <AccountPanel poolName={selectedPool || ''} />
           </div>
         </div>
 
         {/* Middle Section: Order Book (Fixed Width) */}
-        <div className="w-[400px] flex-shrink-0 flex flex-col border-r bg-background overflow-hidden">
+        <div className="w-[400px] shrink-0 flex flex-col border-r bg-background overflow-hidden">
           <OrderBook poolName={selectedPool || ''} network={network} />
         </div>
 
         {/* Right Section: Order Entry Panel (Fixed Width) */}
-        <div className="w-[400px] flex-shrink-0 flex flex-col bg-background overflow-hidden">
+        <div className="w-[400px] shrink-0 flex flex-col bg-background overflow-hidden">
           <OrderPanel
             poolName={selectedPool || 'SUI_USDC'}
             currentPrice={marketPrice?.midPrice || 0}
