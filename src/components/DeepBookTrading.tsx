@@ -14,6 +14,7 @@ import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
 import { TradingHeader } from './TradingHeader';
 import { PoolSelectorPopup } from './PoolSelectorPopup';
+import { useCurrentNetwork } from '@mysten/dapp-kit-react';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -25,7 +26,7 @@ export function DeepBookTrading() {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [interval, setInterval] = useState<Interval>('1h');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const network = 'mainnet';
+  const network = useCurrentNetwork();
 
   useEffect(() => {
     const loadPools = async () => {
@@ -328,7 +329,7 @@ export function DeepBookTrading() {
         {/* Right Section: Order Entry Panel (Fixed Width) */}
         <div className="w-[400px] shrink-0 flex flex-col bg-background overflow-hidden">
           <OrderPanel
-            poolName={selectedPool || 'SUI_USDC'}
+            poolInfo={selectedPoolInfo || null}
             currentPrice={marketPrice?.midPrice || 0}
           />
         </div>

@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { useCurrentAccount, ConnectButton, useCurrentClient, useDAppKit, useCurrentNetwork } from '@mysten/dapp-kit-react';
 import { Transaction } from '@mysten/sui/transactions';
 import { Button } from './ui/button';
-import { getDeepBookPackageId, getBalanceManager, getRegistryId, getBalanceForCoin } from '../lib/deepbook';
+import { getDeepBookPackageId, getBalanceManager, getRegistryId, getBalanceForCoin, placeMarketOrder, PoolInfo, placeLimitOrder } from '../lib/deepbook';
 import { Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface OrderPanelProps {
-    poolName: string;
+    poolInfo: PoolInfo | null;
     currentPrice: number;
 }
 
-export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
+export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
     const dAppKit = useDAppKit();
@@ -30,8 +31,10 @@ export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [isDepositing, setIsDepositing] = useState(false);
     const [isWithdrawing, setIsWithdrawing] = useState(false);
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-    const [baseSymbol, quoteSymbol] = poolName.split('_');
+    const baseSymbol = poolInfo?.baseCoin || 'SUI';
+    const quoteSymbol = poolInfo?.quoteCoin || 'USDC';
 
     // Fetch BalanceManager when account changes
     useEffect(() => {
@@ -43,7 +46,7 @@ export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
 
             setIsLoadingBalanceManager(true);
             try {
-                const network = currentNetwork as 'mainnet' | 'testnet';
+                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
                 const bm = await getBalanceManager(client, currentAccount.address, network);
                 let balance = 0;
                 if (bm) {
@@ -142,16 +145,22 @@ export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
 
             console.log('Deposit successful:', result);
             setDepositAmount('');
+            toast.success('Deposit successful', {
+                description: `${depositAmount} SUI has been deposited to your BalanceManager`,
+            });
 
             // Refresh BalanceManager
             setTimeout(async () => {
-                const network = currentNetwork as 'mainnet' | 'testnet';
+                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
                 const bm = await getBalanceManager(client, currentAccount.address, network);
                 setBalanceManager(bm);
             }, 2000);
         } catch (error) {
             console.error('Deposit failed:', error);
-            alert(`Deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toast.error('Deposit failed', {
+                description: errorMessage,
+            });
         } finally {
             setIsDepositing(false);
         }
@@ -191,18 +200,177 @@ export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
 
             console.log('Withdrawal successful:', result);
             setWithdrawAmount('');
+            toast.success('Withdrawal successful', {
+                description: `${withdrawAmount} SUI has been withdrawn from your BalanceManager`,
+            });
 
             // Refresh BalanceManager
             setTimeout(async () => {
-                const network = currentNetwork as 'mainnet' | 'testnet';
+                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
                 const bm = await getBalanceManager(client, currentAccount.address, network);
                 setBalanceManager(bm);
             }, 2000);
         } catch (error) {
             console.error('Withdrawal failed:', error);
-            alert(`Withdrawal failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toast.error('Withdrawal failed', {
+                description: errorMessage,
+            });
         } finally {
             setIsWithdrawing(false);
+        }
+    };
+
+    // Handle order placement
+    const handlePlaceOrder = async () => {
+        if (!currentAccount?.address || !poolInfo || !balanceManager || !size) {
+            toast.error('Missing required fields', {
+                description: 'Please fill in all required fields before placing an order',
+            });
+            return;
+        }
+
+        if (orderType === 'limit' && (!price || parseFloat(price) <= 0)) {
+            toast.error('Invalid price', {
+                description: 'Please enter a valid price for your limit order',
+            });
+            return;
+        }
+
+        if (parseFloat(size) <= 0) {
+            toast.error('Invalid size', {
+                description: 'Please enter a valid order size',
+            });
+            return;
+        }
+
+        setIsPlacingOrder(true);
+        try {
+            const tx = new Transaction();
+            tx.setSender(currentAccount.address);
+            const network = currentNetwork as 'mainnet' | 'testnet';
+            const priceNum = parseFloat(price || '0');
+            const sizeNum = parseFloat(size);
+
+            if (orderType === 'limit') {
+                const packageId = getDeepBookPackageId(network);
+
+                // Generate trade proof
+                const [proof] = tx.moveCall({
+                    target: `${packageId}::balance_manager::generate_proof_as_owner`,
+                    arguments: [tx.object(balanceManager)],
+                });
+
+                // Calculate scaled price and quantity
+                // Price scaling: (price * FLOAT_SCALAR * quoteCoin.scalar) / baseCoin.scalar
+                // Quantity scaling: quantity * baseCoin.scalar
+                const FLOAT_SCALAR = 1_000_000_000; // 10^9
+                const baseCoinScalar = Math.pow(10, poolInfo.baseAssetDecimals);
+                const quoteCoinScalar = Math.pow(10, poolInfo.quoteAssetDecimals);
+                const scaledPrice = Math.round((priceNum * FLOAT_SCALAR * quoteCoinScalar) / baseCoinScalar);
+                const scaledQuantity = Math.round(sizeNum * baseCoinScalar);
+
+                // Generate client order ID (use timestamp)
+                const clientOrderId = BigInt(Date.now());
+
+                // Order type: 0 = NO_RESTRICTION, 1 = IMMEDIATE_OR_CANCEL, 2 = FILL_OR_KILL, 3 = POST_ONLY
+                const orderTypeValue = 0; // NO_RESTRICTION
+
+                // Self matching option: 0 = SELF_MATCHING_ALLOWED, 1 = CANCEL_TAKER, 2 = CANCEL_MAKER
+                const selfMatchingOption = 0; // SELF_MATCHING_ALLOWED
+
+                // Expiration timestamp (use max timestamp for no expiration, or set a future date)
+                const MAX_TIMESTAMP = 1_844_674_407_370_955_161n; // Max u64 timestamp
+                const expireTimestamp = MAX_TIMESTAMP;
+
+                // Pay with DEEP (true = use DEEP token, false = use base/quote assets)
+                const payWithDeep = false;
+
+                // Is bid: true for buy orders, false for sell orders
+                const isBid = side === 'buy';
+
+                tx.moveCall({
+                    target: `${packageId}::pool::place_limit_order`,
+                    typeArguments: ["0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", "0x2::sui::SUI"],
+                    arguments: [
+                        tx.object(poolInfo.poolId),        // self: Pool
+                        tx.object(balanceManager),         // balance_manager: BalanceManager
+                        proof,                             // trade_proof: TradeProof
+                        tx.pure.u64(clientOrderId),       // client_order_id: u64
+                        tx.pure.u8(orderTypeValue),        // order_type: u8
+                        tx.pure.u8(selfMatchingOption),    // self_matching_option: u8
+                        tx.pure.u64(scaledPrice),          // price: u64
+                        tx.pure.u64(scaledQuantity),       // quantity: u64 (must be scaled)
+                        tx.pure.bool(isBid),               // is_bid: bool
+                        tx.pure.bool(payWithDeep),          // pay_with_deep: bool
+                        tx.pure.u64(expireTimestamp),       // expire_timestamp: u64
+                        tx.object.clock(),                  // clock: Clock
+                    ],
+                })
+                // placeLimitOrder(
+                //     tx,
+                //     client,
+                //     currentAccount.address,
+                //     poolInfo,
+                //     balanceManager,
+                //     side,
+                //     sizeNum,
+                //     network
+                // );
+            } else {
+                placeMarketOrder(
+                    tx,
+                    client,
+                    currentAccount.address,
+                    poolInfo,
+                    balanceManager,
+                    side,
+                    sizeNum,
+                    network
+                );
+            }
+
+            const result = await dAppKit.signAndExecuteTransaction({
+                transaction: tx,
+            });
+
+            if (result.$kind === 'FailedTransaction') {
+                throw new Error('Transaction failed');
+            }
+
+            console.log('Order placed successfully:', result);
+            const orderTypeLabel = orderType === 'limit' ? 'Limit' : 'Market';
+            const sideLabel = side === 'buy' ? 'Buy' : 'Sell';
+            toast.success(`${orderTypeLabel} order placed`, {
+                description: `${sideLabel} ${size} ${baseSymbol} at ${orderType === 'limit' ? `$${price}` : 'market price'}`,
+                duration: 5000,
+            });
+
+            // Clear form
+            setSize('');
+            if (orderType === 'market') {
+                setPrice(currentPrice.toString());
+            }
+
+            // Refresh BalanceManager to update balances
+            setTimeout(async () => {
+                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
+                const bm = await getBalanceManager(client, currentAccount.address, network);
+                if (bm) {
+                    const balance = Number(await getBalanceForCoin(client, currentAccount.address, bm, '0x2::sui::SUI', network)) / 1_000_000_000;
+                    setBalance(balance);
+                }
+                setBalanceManager(bm);
+            }, 2000);
+        } catch (error) {
+            console.error('Order placement failed:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toast.error('Order placement failed', {
+                description: errorMessage,
+                duration: 5000,
+            });
+        } finally {
+            setIsPlacingOrder(false);
         }
     };
 
@@ -421,8 +589,16 @@ export function OrderPanel({ poolName, currentPrice }: OrderPanelProps) {
                     </div>
 
                     {currentAccount ? (
-                        <Button className={`w-full font-bold uppercase ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                            {side === 'buy' ? 'Long' : 'Short'} {baseSymbol}
+                        <Button
+                            onClick={handlePlaceOrder}
+                            disabled={isPlacingOrder || !poolInfo || !balanceManager || !size || (orderType === 'limit' && !price)}
+                            className={`w-full font-bold uppercase ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                        >
+                            {isPlacingOrder ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                `${side === 'buy' ? 'Long' : 'Short'} ${baseSymbol}`
+                            )}
                         </Button>
                     ) : (
                         <div className="w-full [&>button]:w-full [&>button]:font-bold [&>button]:uppercase">

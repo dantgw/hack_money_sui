@@ -1,18 +1,21 @@
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
 import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
-import { Transaction } from '@mysten/sui/transactions'
+import { Transaction } from '@mysten/sui/transactions';
+import { DeepBookClient } from '@mysten/deepbook-v3';
 
 // DeepBook Indexer endpoints
 // Reference: https://docs.sui.io/standards/deepbookv3-indexer
 const INDEXER_URLS = {
   mainnet: "https://deepbook-indexer.mainnet.mystenlabs.com",
   testnet: "https://deepbook-indexer.testnet.mystenlabs.com",
+  devnet: "https://deepbook-indexer.devnet.mystenlabs.com",
 };
 
 const RPC_URLS = {
   mainnet: "https://fullnode.mainnet.sui.io:443",
   testnet: "https://fullnode.testnet.sui.io:443",
+  devnet: "https://fullnode.devnet.sui.io:443",
 };
 export interface PoolInfo {
   poolId: string;
@@ -54,7 +57,7 @@ export interface CandleData {
 /**
  * Get the indexer URL for the specified network
  */
-function getIndexerUrl(network: 'mainnet' | 'testnet' = 'mainnet'): string {
+function getIndexerUrl(network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'): string {
   return INDEXER_URLS[network];
 }
 
@@ -62,7 +65,7 @@ function getIndexerUrl(network: 'mainnet' | 'testnet' = 'mainnet'): string {
  * Get all available pools from DeepBook Indexer
  * Reference: https://docs.sui.io/standards/deepbookv3-indexer
  */
-export async function getAllPools(network: 'mainnet' | 'testnet' = 'mainnet'): Promise<PoolInfo[]> {
+export async function getAllPools(network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'): Promise<PoolInfo[]> {
   try {
     const indexerUrl = getIndexerUrl(network);
     const response = await fetch(`${indexerUrl}/get_pools`);
@@ -147,7 +150,7 @@ export async function getOHLCVData(
   limit: number = 100,
   startTime?: number,
   endTime?: number,
-  network: 'mainnet' | 'testnet' = 'mainnet'
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'
 ): Promise<CandleData[]> {
   try {
     const indexerUrl = getIndexerUrl(network);
@@ -230,7 +233,7 @@ interface DeepBookOrderBookResponse {
  */
 export async function getOrderBook(
   poolName: string,
-  network: 'mainnet' | 'testnet' = 'mainnet',
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet',
   level: number = 2,
   depth: number = 30
 ): Promise<OrderBookData | null> {
@@ -313,7 +316,7 @@ interface DeepBookTradeResponse {
  */
 export async function getRecentTrades(
   poolName: string,
-  network: 'mainnet' | 'testnet' = 'mainnet',
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet',
   limit: number = 50,
   startTime?: number,
   endTime?: number
@@ -388,15 +391,19 @@ export const REGISTRY_ID = {
   testnet: "0x7c256edbda983a2cd6f946655f4bf3f00a41043993781f8674a7046e8c0e11d1",
 } as const;
 
-export function getRegistryId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
-  return REGISTRY_ID[network];
+export function getRegistryId(network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'): string {
+  // Map devnet to testnet since they share the same registry
+  const networkKey = network === 'devnet' ? 'testnet' : network;
+  return REGISTRY_ID[networkKey];
 }
 
 /**
  * Get the DeepBook package ID for the current network
  */
-export function getDeepBookPackageId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
-  return DEEPBOOK_PACKAGE_IDS[network];
+export function getDeepBookPackageId(network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'): string {
+  // Map devnet to testnet since they share the same package IDs
+  const networkKey = network === 'devnet' ? 'testnet' : network;
+  return DEEPBOOK_PACKAGE_IDS[networkKey];
 }
 
 export function getDeepBookBalanceManagerPackageId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
@@ -414,7 +421,7 @@ export function getDeepBookBalanceManagerPackageId(network: 'mainnet' | 'testnet
 export async function getBalanceManager(
   _client: SuiGrpcClient,
   userAddress: string,
-  network: 'mainnet' | 'testnet' = 'mainnet'
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'
 ): Promise<string | null> {
 
   const deepbookPackageId = getDeepBookPackageId(network);
@@ -491,7 +498,7 @@ export async function getBalanceForCoin(
   userAddress: string,
   balanceManagerId: string,
   coinType: string,
-  network: 'mainnet' | 'testnet' = 'mainnet'
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'
 ): Promise<bigint> {
   try {
     const packageId = getDeepBookPackageId(network);
@@ -537,5 +544,160 @@ export async function getBalanceForCoin(
   } catch (error) {
     console.error('Error getting balance for coin:', error);
     return 0n;
+  }
+}
+
+// =============== Order Placement Functions ===============
+
+/**
+ * Place a limit order using DeepBook SDK
+ * @param tx - Transaction object to add the order to
+ * @param client - Sui client instance
+ * @param userAddress - User's address
+ * @param poolInfo - Pool information including poolId and coin symbols
+ * @param balanceManagerId - BalanceManager ID for the user
+ * @param side - 'buy' or 'sell'
+ * @param price - Price in quote asset (e.g., USDC)
+ * @param quantity - Quantity in base asset (e.g., SUI)
+ * @param network - Network to use (mainnet or testnet)
+ * @param clientOrderId - Optional client order ID (defaults to timestamp-based ID)
+ */
+export function placeLimitOrder(
+  tx: Transaction,
+  client: SuiGrpcClient,
+  userAddress: string,
+  poolInfo: PoolInfo,
+  balanceManagerId: string,
+  side: 'buy' | 'sell',
+  price: number,
+  quantity: number,
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet',
+  clientOrderId?: string
+): void {
+  try {
+    // Initialize DeepBookClient with the client and user address
+    // Map devnet to testnet since DeepBook SDK may not support devnet directly
+
+    const deepBookClient = new DeepBookClient({
+      client,
+      address: userAddress,
+      network: network,
+      // Register pool and balance manager using their IDs as keys
+      pools: {
+        [poolInfo.poolId]: {
+          address: poolInfo.poolId,
+          baseCoin: poolInfo.baseCoin, // Use coin symbol from pool info
+          quoteCoin: poolInfo.quoteCoin, // Use coin symbol from pool info
+        },
+      },
+      balanceManagers: {
+        'default': {
+          address: balanceManagerId,
+        },
+      },
+    });
+
+    const isBid = side === 'buy';
+    // clientOrderId must be a string that represents a u64 number
+    // The SDK will convert it to u64 in the transaction
+    const orderId = clientOrderId || Date.now().toString();
+
+    // Use a simple key for the balance manager (the SDK uses this to look it up in config)
+    const balanceManagerKey = 'default';
+
+    // Set the transaction sender to the user address
+    // This is required for generateProofAsOwner to work correctly
+    tx.setSender(userAddress);
+
+    // Place the limit order
+    const placeOrder = deepBookClient.deepBook.placeLimitOrder({
+      poolKey: poolInfo.poolId,
+      balanceManagerKey: balanceManagerKey,
+      clientOrderId: orderId,
+      price,
+      quantity,
+      isBid,
+    });
+
+    // Apply the order placement to the transaction
+    placeOrder(tx);
+  } catch (error) {
+    console.error('Error placing limit order:', error);
+    throw error;
+  }
+}
+
+/**
+ * Place a market order using DeepBook SDK
+ * @param tx - Transaction object to add the order to
+ * @param client - Sui client instance
+ * @param userAddress - User's address
+ * @param poolInfo - Pool information including poolId and coin symbols
+ * @param balanceManagerId - BalanceManager ID for the user
+ * @param side - 'buy' or 'sell'
+ * @param quantity - Quantity in base asset (e.g., SUI)
+ * @param network - Network to use (mainnet or testnet)
+ * @param clientOrderId - Optional client order ID (defaults to timestamp-based ID)
+ */
+export function placeMarketOrder(
+  tx: Transaction,
+  client: SuiGrpcClient,
+  userAddress: string,
+  poolInfo: PoolInfo,
+  balanceManagerId: string,
+  side: 'buy' | 'sell',
+  quantity: number,
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet',
+  clientOrderId?: string
+): void {
+  try {
+    // Initialize DeepBookClient with the client and user address
+    // Map devnet to testnet since DeepBook SDK may not support devnet directly
+    const sdkNetwork = network === 'devnet' ? 'testnet' : network;
+    const deepBookClient = new DeepBookClient({
+      client,
+      address: userAddress,
+      network: sdkNetwork,
+      // Register pool and balance manager using their IDs as keys
+      pools: {
+        [poolInfo.poolId]: {
+          address: poolInfo.poolId,
+          baseCoin: poolInfo.baseCoin, // Use coin symbol from pool info
+          quoteCoin: poolInfo.quoteCoin, // Use coin symbol from pool info
+        },
+      },
+      balanceManagers: {
+        'default': {
+          address: balanceManagerId,
+        },
+      },
+    });
+
+    const isBid = side === 'buy';
+    // clientOrderId must be a string that represents a u64 number
+    // The SDK will convert it to u64 in the transaction
+    const orderId = clientOrderId || Date.now().toString();
+
+    // Use a simple key for the balance manager (the SDK uses this to look it up in config)
+    const balanceManagerKey = 'default';
+
+    // Set the transaction sender to the user address
+    // This is required for generateProofAsOwner to work correctly
+
+
+    // Place the market order
+    const placeOrder = deepBookClient.deepBook.placeMarketOrder({
+      poolKey: poolInfo.poolId,
+      balanceManagerKey: balanceManagerKey,
+      clientOrderId: orderId,
+      quantity,
+      isBid,
+    });
+
+    // Apply the order placement to the transaction
+    placeOrder(tx);
+  } catch (error) {
+    console.error('Error placing market order:', error);
+    throw error;
   }
 }

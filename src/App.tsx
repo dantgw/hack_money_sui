@@ -2,6 +2,7 @@ import { ConnectButton, useCurrentNetwork, useDAppKit } from "@mysten/dapp-kit-r
 import { TrendingUp } from "lucide-react";
 import { DeepBookTrading } from "./components/DeepBookTrading";
 import { Button } from "./components/ui/button";
+import { Toaster } from "sonner";
 
 function App() {
   const currentNetwork = useCurrentNetwork();
@@ -49,6 +50,18 @@ function App() {
         <DeepBookTrading />
 
       </main>
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+        toastOptions={{
+          style: {
+            background: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--foreground))',
+          },
+        }}
+      />
     </div>
   );
 }

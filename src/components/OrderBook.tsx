@@ -3,7 +3,7 @@ import { getOrderBook, OrderBookData, getRecentTrades, Trade } from '../lib/deep
 
 interface OrderBookProps {
     poolName: string;
-    network: 'mainnet' | 'testnet';
+    network: 'mainnet' | 'testnet' | 'devnet';
 }
 
 type TabType = 'orderbook' | 'trades';
