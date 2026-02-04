@@ -30,7 +30,7 @@ const MVR_OVERRIDES = {
 export const dAppKit = createDAppKit({
   enableBurnerWallet: import.meta.env.DEV,
   networks: ["mainnet", "testnet", "devnet"],
-  defaultNetwork: "testnet",
+  defaultNetwork: "mainnet",
   createClient(network) {
     return new SuiGrpcClient({
       network,

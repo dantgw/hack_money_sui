@@ -285,100 +285,100 @@ export function TradingChart({
     }, []);
 
     // Subscribe to visible range changes to detect scrolling back
-    useEffect(() => {
-        if (!chartRef.current || !onLoadMore || data.length === 0) return;
+    // useEffect(() => {
+    //     if (!chartRef.current || !onLoadMore || data.length === 0) return;
 
-        const timeScale = chartRef.current.timeScale();
-        const handler = (range: { from: number; to: number } | null) => {
-            if (!range) {
-                console.log('[Scroll Detection] Range is null');
-                return;
-            }
+    //     const timeScale = chartRef.current.timeScale();
+    //     const handler = (range: { from: number; to: number } | null) => {
+    //         if (!range) {
+    //             console.log('[Scroll Detection] Range is null');
+    //             return;
+    //         }
 
-            if (isLoadingMoreRef.current) {
-                console.log('[Scroll Detection] Already loading more, skipping');
-                return;
-            }
+    //         if (isLoadingMoreRef.current) {
+    //             console.log('[Scroll Detection] Already loading more, skipping');
+    //             return;
+    //         }
 
-            console.log('[Scroll Detection] Visible range:', {
-                from: range.from,
-                to: range.to,
-                dataLength: data.length,
-                oldestCandleTime: data.length > 0 ? data[0].time : 'N/A',
-                oldestCandleDate: data.length > 0 ? new Date(data[0].time * 1000).toISOString() : 'N/A'
-            });
+    //         console.log('[Scroll Detection] Visible range:', {
+    //             from: range.from,
+    //             to: range.to,
+    //             dataLength: data.length,
+    //             oldestCandleTime: data.length > 0 ? data[0].time : 'N/A',
+    //             oldestCandleDate: data.length > 0 ? new Date(data[0].time * 1000).toISOString() : 'N/A'
+    //         });
 
-            // range.from is a logical index (0-based) of the data array
-            // Load more when we're near the left edge (within first 20 candles)
-            const threshold = 20; // Load more when within first 20 candles
+    //         // range.from is a logical index (0-based) of the data array
+    //         // Load more when we're near the left edge (within first 20 candles)
+    //         const threshold = 20; // Load more when within first 20 candles
 
-            if (range.from < threshold && data.length > 0) {
-                console.log('[Scroll Detection] ✅ Scrolled past threshold!', {
-                    rangeFrom: range.from,
-                    threshold,
-                    oldestCandleIndex: 0,
-                    oldestCandleTime: data[0].time
-                });
+    //         if (range.from < threshold && data.length > 0) {
+    //             console.log('[Scroll Detection] ✅ Scrolled past threshold!', {
+    //                 rangeFrom: range.from,
+    //                 threshold,
+    //                 oldestCandleIndex: 0,
+    //                 oldestCandleTime: data[0].time
+    //             });
 
-                // Find the oldest candle timestamp
-                const oldestCandle = data[0];
-                const oldestTimestamp = oldestCandle.time;
+    //             // Find the oldest candle timestamp
+    //             const oldestCandle = data[0];
+    //             const oldestTimestamp = oldestCandle.time;
 
-                // Use the actual oldest timestamp as the cache key for more precision
-                // This ensures we can load more data even if we've scrolled past the edge
-                // The cache will be cleared when new data is loaded (oldest timestamp moves backward)
-                const cacheKey = oldestTimestamp;
-                const alreadyLoaded = loadedDataRef.current.has(cacheKey);
+    //             // Use the actual oldest timestamp as the cache key for more precision
+    //             // This ensures we can load more data even if we've scrolled past the edge
+    //             // The cache will be cleared when new data is loaded (oldest timestamp moves backward)
+    //             const cacheKey = oldestTimestamp;
+    //             const alreadyLoaded = loadedDataRef.current.has(cacheKey);
 
-                console.log('[Scroll Detection] Cache check:', {
-                    oldestTimestamp,
-                    oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
-                    cacheKey,
-                    alreadyLoaded,
-                    cacheSize: loadedDataRef.current.size,
-                    cacheKeys: Array.from(loadedDataRef.current).slice(0, 10) // Show first 10 for debugging
-                });
+    //             console.log('[Scroll Detection] Cache check:', {
+    //                 oldestTimestamp,
+    //                 oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
+    //                 cacheKey,
+    //                 alreadyLoaded,
+    //                 cacheSize: loadedDataRef.current.size,
+    //                 cacheKeys: Array.from(loadedDataRef.current).slice(0, 10) // Show first 10 for debugging
+    //             });
 
-                if (!alreadyLoaded) {
-                    console.log('[Scroll Detection] 🚀 Triggering loadMore!', {
-                        oldestTimestamp,
-                        oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
-                        rangeFrom: range.from
-                    });
+    //             if (!alreadyLoaded) {
+    //                 console.log('[Scroll Detection] 🚀 Triggering loadMore!', {
+    //                     oldestTimestamp,
+    //                     oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
+    //                     rangeFrom: range.from
+    //                 });
 
-                    isLoadingMoreRef.current = true;
-                    loadedDataRef.current.add(cacheKey);
-                    onLoadMore(oldestTimestamp);
+    //                 isLoadingMoreRef.current = true;
+    //                 loadedDataRef.current.add(cacheKey);
+    //                 onLoadMore(oldestTimestamp);
 
-                    // Reset loading flag after a delay to allow for new data to load
-                    setTimeout(() => {
-                        console.log('[Scroll Detection] Resetting loading flag');
-                        isLoadingMoreRef.current = false;
-                    }, 2000);
-                } else {
-                    console.log('[Scroll Detection] ⏭️ Skipping - already loaded for this timestamp', {
-                        oldestTimestamp,
-                        oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
-                        suggestion: 'New data may not have been loaded yet, or cache needs clearing'
-                    });
-                }
-            } else {
-                console.log('[Scroll Detection] Not at threshold yet', {
-                    rangeFrom: range.from,
-                    threshold,
-                    condition: range.from < threshold ? 'true' : 'false'
-                });
-            }
-        };
+    //                 // Reset loading flag after a delay to allow for new data to load
+    //                 setTimeout(() => {
+    //                     console.log('[Scroll Detection] Resetting loading flag');
+    //                     isLoadingMoreRef.current = false;
+    //                 }, 2000);
+    //             } else {
+    //                 console.log('[Scroll Detection] ⏭️ Skipping - already loaded for this timestamp', {
+    //                     oldestTimestamp,
+    //                     oldestTimestampDate: new Date(oldestTimestamp * 1000).toISOString(),
+    //                     suggestion: 'New data may not have been loaded yet, or cache needs clearing'
+    //                 });
+    //             }
+    //         } else {
+    //             console.log('[Scroll Detection] Not at threshold yet', {
+    //                 rangeFrom: range.from,
+    //                 threshold,
+    //                 condition: range.from < threshold ? 'true' : 'false'
+    //             });
+    //         }
+    //     };
 
-        // Subscribe to visible range changes
-        // Note: lightweight-charts subscription methods may return void or a function
-        // The chart will handle cleanup when removed
-        timeScale.subscribeVisibleLogicalRangeChange(handler);
+    //     // Subscribe to visible range changes
+    //     // Note: lightweight-charts subscription methods may return void or a function
+    //     // The chart will handle cleanup when removed
+    //     timeScale.subscribeVisibleLogicalRangeChange(handler);
 
-        // Cleanup is handled by chart removal in the main useEffect
-        // No explicit unsubscribe needed as the chart instance manages subscriptions
-    }, [data, interval, onLoadMore]);
+    //     // Cleanup is handled by chart removal in the main useEffect
+    //     // No explicit unsubscribe needed as the chart instance manages subscriptions
+    // }, [data, interval, onLoadMore]);
 
     // Update localization formatting when interval, tickSize, or asset decimals change
     useEffect(() => {

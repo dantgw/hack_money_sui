@@ -1,3 +1,8 @@
+import { SuiGrpcClient } from '@mysten/sui/grpc';
+
+import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
+import { Transaction } from '@mysten/sui/transactions'
+
 // DeepBook Indexer endpoints
 // Reference: https://docs.sui.io/standards/deepbookv3-indexer
 const INDEXER_URLS = {
@@ -5,6 +10,10 @@ const INDEXER_URLS = {
   testnet: "https://deepbook-indexer.testnet.mystenlabs.com",
 };
 
+const RPC_URLS = {
+  mainnet: "https://fullnode.mainnet.sui.io:443",
+  testnet: "https://fullnode.testnet.sui.io:443",
+};
 export interface PoolInfo {
   poolId: string;
   poolName: string;
@@ -57,11 +66,11 @@ export async function getAllPools(network: 'mainnet' | 'testnet' = 'mainnet'): P
   try {
     const indexerUrl = getIndexerUrl(network);
     const response = await fetch(`${indexerUrl}/get_pools`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch pools: ${response.statusText}`);
     }
-    
+
     const pools = await response.json();
     console.log("get pool:", pools);
     // Transform the response to our PoolInfo format
@@ -91,10 +100,10 @@ export async function getMarketPrice(
   network: 'mainnet' | 'testnet' = 'mainnet'
 ): Promise<MarketPrice | null> {
   try {
-    
+
     // Get the latest 1-minute candle to get current price
     const candles = await getOHLCVData(poolName, '1m', 1, undefined, undefined, network);
-    
+
     if (!candles || candles.length === 0) {
       console.warn('No candles returned for pool:', poolName);
       return null;
@@ -102,9 +111,9 @@ export async function getMarketPrice(
 
     const latestCandle = candles[candles.length - 1];
     const currentPrice = latestCandle.close;
-    
+
     console.log('Current price for', poolName, ':', currentPrice);
-    
+
     // Estimate bid/ask spread (typically 0.1% for liquid pairs)
     const spread = currentPrice * 0.001;
     const bestBid = currentPrice - spread / 2;
@@ -146,31 +155,31 @@ export async function getOHLCVData(
       interval,
       limit: limit.toString(),
     });
-    
+
     // Add start_time parameter if provided (for pagination)
     if (startTime !== undefined) {
       params.append('start_time', startTime.toString());
     }
-    
+
     // Add end_time parameter if provided (for pagination)
     if (endTime !== undefined) {
       params.append('end_time', endTime.toString());
     }
-    
+
     const url = `${indexerUrl}/ohclv/${poolName}?${params.toString()}`;
-    
-    
+
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OHLCV fetch failed:', response.status, errorText);
       throw new Error(`Failed to fetch OHLCV data: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
-    
+
+
     // Transform the candles array to our CandleData format
     // Format: [timestamp, open, high, low, close, volume]
     // API returns Unix timestamps in seconds, but we need to ensure they're in seconds format
@@ -179,10 +188,10 @@ export async function getOHLCVData(
       // Unix timestamps in seconds are typically 10 digits (before year 2286)
       // Timestamps >= 10000000000 are likely milliseconds
       const timestamp = candle[0];
-      const timestampSeconds = timestamp >= 10000000000 
+      const timestampSeconds = timestamp >= 10000000000
         ? Math.floor(timestamp / 1000)
         : timestamp;
-      
+
       return {
         time: timestampSeconds,
         open: candle[1],
@@ -192,10 +201,10 @@ export async function getOHLCVData(
         volume: candle[5],
       };
     });
-    
+
     // Sort by time in ascending order (required by lightweight-charts)
     candles.sort((a: CandleData, b: CandleData) => a.time - b.time);
-    
+
     return candles;
   } catch (error) {
     console.error('Error fetching OHLCV data for', poolName, ':', error);
@@ -231,30 +240,30 @@ export async function getOrderBook(
       level: level.toString(),
       depth: depth.toString(),
     });
-    
+
     const url = `${indexerUrl}/orderbook/${poolName}?${params.toString()}`;
-    
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Order book fetch failed:', response.status, errorText);
       throw new Error(`Failed to fetch order book: ${response.statusText}`);
     }
-    
+
     const data: DeepBookOrderBookResponse = await response.json();
-    
+
     // Transform the order book data to our format
     const bids: OrderBookLevel[] = data.bids.map(([price, quantity]) => ({
       price: parseFloat(price),
       quantity: parseFloat(quantity),
     }));
-    
+
     const asks: OrderBookLevel[] = data.asks.map(([price, quantity]) => ({
       price: parseFloat(price),
       quantity: parseFloat(quantity),
     }));
-    
+
     return { bids, asks };
   } catch (error) {
     console.error('Error fetching order book:', error);
@@ -312,34 +321,34 @@ export async function getRecentTrades(
   try {
     const indexerUrl = getIndexerUrl(network);
     const params = new URLSearchParams();
-    
+
     if (limit) {
       params.append('limit', limit.toString());
     }
-    
+
     if (startTime !== undefined) {
       params.append('start_time', startTime.toString());
     }
-    
+
     if (endTime !== undefined) {
       params.append('end_time', endTime.toString());
     }
-    
+
     const url = `${indexerUrl}/trades/${poolName}${params.toString() ? `?${params.toString()}` : ''}`;
-    
+
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Trades fetch failed:', response.status, errorText);
       throw new Error(`Failed to fetch trades: ${response.statusText}`);
     }
-    
+
     const data: DeepBookTradeResponse[] = await response.json();
-    
+
     // Sort by timestamp descending (most recent first) before transforming
     data.sort((a, b) => b.timestamp - a.timestamp);
-    
+
     // Transform the trades to our Trade format
     // Use taker_is_bid to determine side: true = buy, false = sell
     const trades: Trade[] = data.map((trade) => ({
@@ -349,10 +358,184 @@ export async function getRecentTrades(
       size: trade.base_volume,
       side: trade.taker_is_bid ? 'buy' : 'sell',
     }));
-    
+
     return trades;
   } catch (error) {
     console.error('Error fetching recent trades:', error);
     return [];
+  }
+}
+
+// =============== BalanceManager Functions ===============
+
+/**
+ * DeepBook V3 package IDs
+ * Reference: https://docs.sui.io/standards/deepbookv3/contract-information
+ */
+export const DEEPBOOK_PACKAGE_IDS = {
+  mainnet: '0x337f4f4f6567fcd778d5454f27c16c70e2f274cc6377ea6249ddf491482ef497',
+  testnet: '0x22be4cade64bf2d02412c7e8d0e8beea2f78828b948118d46735315409371a3c',
+} as const;
+
+export const DEEPBOOK_BALANCE_MANAGER_PACKAGE_IDS = {
+  mainnet: '0xcaf6ba059d539a97646d47f0b9ddf843e138d215e2a12ca1f4585d386f7aec3a',
+  testnet: '0x984757fc7c0e6dd5f15c2c66e881dd6e5aca98b725f3dbd83c445e057ebb790a',
+} as const;
+
+
+export const REGISTRY_ID = {
+  mainnet: "0xaf16199a2dff736e9f07a845f23c5da6df6f756eddb631aed9d24a93efc4549d",
+  testnet: "0x7c256edbda983a2cd6f946655f4bf3f00a41043993781f8674a7046e8c0e11d1",
+} as const;
+
+export function getRegistryId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
+  return REGISTRY_ID[network];
+}
+
+/**
+ * Get the DeepBook package ID for the current network
+ */
+export function getDeepBookPackageId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
+  return DEEPBOOK_PACKAGE_IDS[network];
+}
+
+export function getDeepBookBalanceManagerPackageId(network: 'mainnet' | 'testnet' = 'mainnet'): string {
+  return DEEPBOOK_BALANCE_MANAGER_PACKAGE_IDS[network];
+}
+
+
+
+/**
+ * Get BalanceManager for a user
+ * Note: BalanceManager is a shared object after creation.
+ * This function queries the Registry to find the user's BalanceManager IDs.
+ * Returns null if no BalanceManager exists
+ */
+export async function getBalanceManager(
+  _client: SuiGrpcClient,
+  userAddress: string,
+  network: 'mainnet' | 'testnet' = 'mainnet'
+): Promise<string | null> {
+
+  const deepbookPackageId = getDeepBookPackageId(network);
+  const registryId = getRegistryId(network);
+
+  // Query the Registry to get BalanceManager IDs for the user
+
+  const tx = new Transaction();
+
+  const jsonRpcClient = new SuiJsonRpcClient({ network, url: RPC_URLS[network] });
+
+  tx.moveCall({
+    target: `${deepbookPackageId}::registry::get_balance_manager_ids`,
+    arguments: [
+      tx.object(registryId),
+      tx.pure.address(userAddress),
+    ],
+
+  });
+  tx.setSender(userAddress);
+
+
+
+  // Simulate the transaction to get the return value (VecSet<ID>)
+  let result
+
+
+  // Build the transaction bytes
+  result = await jsonRpcClient.devInspectTransactionBlock({
+    transactionBlock: tx,
+    sender: userAddress,
+  });
+
+  // Parse the return values from simulation
+  let balanceManagerIds: string[] = [];
+
+  // Get the return value directly from devInspectTransactionBlock
+  const returnValue = result.results?.[0]?.returnValues?.[0];
+
+  if (returnValue && Array.isArray(returnValue)) {
+    // returnValue is [bytes, type] tuple format
+    const bcsData = returnValue[0];
+
+    if (bcsData && Array.isArray(bcsData)) {
+      try {
+        // Parse the VecSet<ID> from BCS bytes
+        const { bcs } = await import('@mysten/sui/bcs');
+        const vecSet = bcs.vector(bcs.Address).parse(new Uint8Array(bcsData));
+        balanceManagerIds = vecSet;
+        console.log("BalanceManager IDs from Registry:", balanceManagerIds);
+      } catch (parseError) {
+        console.error("Error parsing BCS data:", parseError);
+      }
+    }
+  }
+
+  // If no BalanceManager found in registry
+  if (balanceManagerIds.length === 0) {
+    return null;
+  }
+
+  // Get the first (most recent) BalanceManager
+  const balanceManagerId = balanceManagerIds[0];
+
+  return balanceManagerId
+}
+
+/**
+ * Get balance for a specific coin type in the BalanceManager
+ * Note: This function uses transaction simulation to read the balance
+ */
+export async function getBalanceForCoin(
+  _client: SuiGrpcClient,
+  userAddress: string,
+  balanceManagerId: string,
+  coinType: string,
+  network: 'mainnet' | 'testnet' = 'mainnet'
+): Promise<bigint> {
+  try {
+    const packageId = getDeepBookPackageId(network);
+
+    // Create a transaction to call the balance view function
+    const tx = new Transaction();
+
+    tx.moveCall({
+      target: `${packageId}::balance_manager::balance`,
+      typeArguments: [coinType],
+      arguments: [tx.object(balanceManagerId)],
+    });
+
+    // Use JsonRpc client devInspectTransactionBlock, similar to getBalanceManager
+    const jsonRpcClient = new SuiJsonRpcClient({ network, url: RPC_URLS[network] });
+
+    const result = await jsonRpcClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: userAddress,
+    });
+    console.log("result for balance:", result);
+    // Parse the return values from simulation
+    const returnValue = result.results?.[0]?.returnValues?.[0];
+
+    if (returnValue && Array.isArray(returnValue)) {
+      // returnValue is [bytes, type] tuple format
+      const bcsData = returnValue[0];
+
+      if (bcsData && Array.isArray(bcsData)) {
+        try {
+          // Parse the returned u64 balance from BCS bytes
+          // u64 is 8 bytes in little-endian format
+          const bytes = new Uint8Array(bcsData);
+          const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+          return view.getBigUint64(0, true); // true = little-endian
+        } catch (parseError) {
+          console.error("Error parsing balance BCS data:", parseError);
+        }
+      }
+    }
+
+    return 0n;
+  } catch (error) {
+    console.error('Error getting balance for coin:', error);
+    return 0n;
   }
 }

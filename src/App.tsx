@@ -1,15 +1,16 @@
-import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit-react";
-import { isValidSuiObjectId } from "@mysten/sui/utils";
-import { useState } from "react";
-import { Counter } from "./Counter";
-import { CreateCounter } from "./CreateCounter";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Wallet, TrendingUp } from "lucide-react";
+import { ConnectButton, useCurrentNetwork, useDAppKit } from "@mysten/dapp-kit-react";
+import { TrendingUp } from "lucide-react";
 import { DeepBookTrading } from "./components/DeepBookTrading";
+import { Button } from "./components/ui/button";
 
 function App() {
-  const currentAccount = useCurrentAccount();
+  const currentNetwork = useCurrentNetwork();
+  const dAppKit = useDAppKit();
 
+  const toggleNetwork = () => {
+    const newNetwork = currentNetwork === 'mainnet' ? 'testnet' : 'mainnet';
+    dAppKit.switchNetwork(newNetwork);
+  };
 
   return (
     <div className="min-h-screen">
@@ -27,7 +28,17 @@ function App() {
             </nav>
           </div>
 
-          <ConnectButton />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleNetwork}
+              className="font-medium"
+            >
+              {currentNetwork === 'mainnet' ? 'Mainnet' : 'Testnet'}
+            </Button>
+            <ConnectButton />
+          </div>
 
         </div>
       </header>

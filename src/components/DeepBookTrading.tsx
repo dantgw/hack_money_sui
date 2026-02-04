@@ -107,7 +107,7 @@ export function DeepBookTrading() {
         // Load OHLCV data for the chart
         const limit = 500;
         const ohlcvData = await getOHLCVData(selectedPool, interval, limit, undefined, undefined, network);
-        console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
+        // console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
 
         if (ohlcvData.length > 0) {
           setChartData(ohlcvData);
@@ -197,15 +197,15 @@ export function DeepBookTrading() {
       const endTime = oldestTimestampSeconds;
       const startTime = oldestTimestampSeconds - (limit * intervalSeconds);
 
-      console.log('Loading more candles:', {
-        oldestTimestamp,
-        oldestTimestampSeconds,
-        startTime,
-        endTime,
-        limit,
-        intervalSeconds,
-        timeRangeHours: (endTime - startTime) / 3600
-      });
+      // console.log('Loading more candles:', {
+      //   oldestTimestamp,
+      //   oldestTimestampSeconds,
+      //   startTime,
+      //   endTime,
+      //   limit,
+      //   intervalSeconds,
+      //   timeRangeHours: (endTime - startTime) / 3600
+      // });
 
       // Fetch older candles before the given timestamp
       const olderCandles = await getOHLCVData(
@@ -218,7 +218,7 @@ export function DeepBookTrading() {
       );
 
       if (olderCandles.length > 0) {
-        console.log('[LoadMore] Successfully loaded', olderCandles.length, 'older candles');
+        // console.log('[LoadMore] Successfully loaded', olderCandles.length, 'older candles');
 
         // Merge with existing data, ensuring no duplicates and maintaining chronological order
         setChartData(prevData => {
@@ -232,13 +232,13 @@ export function DeepBookTrading() {
           // Sort by time to ensure chronological order
           combined.sort((a, b) => a.time - b.time);
 
-          console.log('[LoadMore] Data merged:', {
-            previousCount: prevData.length,
-            newCandlesCount: newCandles.length,
-            totalCount: combined.length,
-            newOldestTime: combined[0]?.time,
-            newOldestDate: combined[0] ? new Date(combined[0].time * 1000).toISOString() : 'N/A'
-          });
+          // console.log('[LoadMore] Data merged:', {
+          //   previousCount: prevData.length,
+          //   newCandlesCount: newCandles.length,
+          //   totalCount: combined.length,
+          //   newOldestTime: combined[0]?.time,
+          //   newOldestDate: combined[0] ? new Date(combined[0].time * 1000).toISOString() : 'N/A'
+          // });
 
           return combined;
         });
