@@ -307,27 +307,47 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
                         tx.object.clock(),                  // clock: Clock
                     ],
                 })
-                // placeLimitOrder(
-                //     tx,
-                //     client,
-                //     currentAccount.address,
-                //     poolInfo,
-                //     balanceManager,
-                //     side,
-                //     sizeNum,
-                //     network
-                // );
+
             } else {
-                placeMarketOrder(
-                    tx,
-                    client,
-                    currentAccount.address,
-                    poolInfo,
-                    balanceManager,
-                    side,
-                    sizeNum,
-                    network
-                );
+                const packageId = getDeepBookPackageId(network);
+
+                // Generate trade proof
+                const [proof] = tx.moveCall({
+                    target: `${packageId}::balance_manager::generate_proof_as_owner`,
+                    arguments: [tx.object(balanceManager)],
+                });
+
+                // Quantity scaling: quantity * baseCoin.scalar
+                const baseCoinScalar = Math.pow(10, poolInfo.baseAssetDecimals);
+                const scaledQuantity = Math.round(sizeNum * baseCoinScalar);
+
+                // Generate client order ID (use timestamp)
+                const clientOrderId = BigInt(Date.now());
+
+                // Self matching option: 0 = SELF_MATCHING_ALLOWED, 1 = CANCEL_TAKER, 2 = CANCEL_MAKER
+                const selfMatchingOption = 0; // SELF_MATCHING_ALLOWED
+
+                // Pay with DEEP (true = use DEEP token, false = use base/quote assets)
+                const payWithDeep = false;
+
+                // Is bid: true for buy orders, false for sell orders
+                const isBid = side === 'buy';
+
+                tx.moveCall({
+                    target: `${packageId}::pool::place_market_order`,
+                    typeArguments: ["0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", "0x2::sui::SUI"],
+                    arguments: [
+                        tx.object(poolInfo.poolId),        // self: Pool
+                        tx.object(balanceManager),         // balance_manager: BalanceManager
+                        proof,                             // trade_proof: TradeProof
+                        tx.pure.u64(clientOrderId),       // client_order_id: u64
+                        tx.pure.u8(selfMatchingOption),   // self_matching_option: u8
+                        tx.pure.u64(scaledQuantity),      // quantity: u64 (must be scaled)
+                        tx.pure.bool(isBid),              // is_bid: bool
+                        tx.pure.bool(payWithDeep),        // pay_with_deep: bool
+                        tx.object.clock(),                // clock: Clock
+                    ],
+                });
             }
 
             const result = await dAppKit.signAndExecuteTransaction({

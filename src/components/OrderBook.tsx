@@ -106,7 +106,7 @@ export function OrderBook({ poolName, network }: OrderBookProps) {
 
                             {/* Spread */}
                             <div className="p-2 border-y bg-muted/30 text-center font-medium">
-                                Spread: {Math.abs(orderBookData.asks[0].price - orderBookData.bids[0].price).toFixed(5)}
+                                Spread: {Math.abs(orderBookData?.asks?.[0]?.price - orderBookData?.bids?.[0]?.price).toFixed(5)}
                             </div>
 
                             {/* Bids (Buys) - Green */}
