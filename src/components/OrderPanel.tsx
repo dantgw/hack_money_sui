@@ -3,7 +3,7 @@ import { useCurrentAccount, ConnectButton, useCurrentClient, useDAppKit, useCurr
 import { Transaction } from '@mysten/sui/transactions';
 import { Button } from './ui/button';
 import { getDeepBookPackageId, getBalanceManager, getRegistryId, getBalanceForCoin, PoolInfo } from '../lib/deepbook';
-import { Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
@@ -82,6 +82,10 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
     const [isDepositing, setIsDepositing] = useState(false);
     const [isWithdrawing, setIsWithdrawing] = useState(false);
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+    // Balance Manager modals
+    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+    const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
     const baseSymbol = poolInfo?.baseCoin || 'SUI';
     const quoteSymbol = poolInfo?.quoteCoin || 'USDC';
@@ -190,7 +194,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
 
     // Handle deposit with BalanceManager creation if needed
     const handleDeposit = async () => {
-        if (!currentAccount?.address || !depositAmount) return;
+        if (!currentAccount?.address || !depositAmount) return false;
 
         setIsDepositing(true);
         try {
@@ -274,12 +278,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                 const bm = await getBalanceManager(client, currentAccount.address, network);
                 setBalanceManager(bm);
             }, 2000);
+            return true;
         } catch (error) {
             console.error('Deposit failed:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             toast.error('Deposit failed', {
                 description: errorMessage,
             });
+            return false;
         } finally {
             setIsDepositing(false);
         }
@@ -287,7 +293,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
 
     // Handle withdrawal
     const handleWithdraw = async () => {
-        if (!currentAccount?.address || !withdrawAmount || !balanceManager) return;
+        if (!currentAccount?.address || !withdrawAmount || !balanceManager) return false;
 
         setIsWithdrawing(true);
         try {
@@ -329,12 +335,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                 const bm = await getBalanceManager(client, currentAccount.address, network);
                 setBalanceManager(bm);
             }, 2000);
+            return true;
         } catch (error) {
             console.error('Withdrawal failed:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             toast.error('Withdrawal failed', {
                 description: errorMessage,
             });
+            return false;
         } finally {
             setIsWithdrawing(false);
         }
@@ -594,13 +602,6 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 gap-1">
-                        {['25%', '50%', '75%', '100%'].map((pct) => (
-                            <button key={pct} className="text-[10px] py-1 bg-muted rounded hover:bg-muted/80 text-muted-foreground">
-                                {pct}
-                            </button>
-                        ))}
-                    </div>
 
                     <div className="pt-4 space-y-2">
                         <div className="flex justify-between text-[11px] text-muted-foreground">
@@ -642,127 +643,193 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
 
             {/* BalanceManager Section */}
             {currentAccount && (
-                <div className="p-4 border-t bg-muted/30 space-y-3 mb-8">
+                <div className="p-4 border-t bg-muted/30 space-y-4 mb-8">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Balance Manager</h3>
+                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            Balance Manager
+                        </h3>
                         {isLoadingBalanceManager && (
                             <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                         )}
                     </div>
 
-                    {balanceManager ? (
-                        <div className="space-y-3">
-                            <div className="text-[10px] text-muted-foreground font-mono truncate">
-                                ID: {balanceManager.slice(0, 8)}...{balanceManager.slice(-6)}
-                            </div>
-
-                            {/* Deposit Section */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                    <ArrowDownToLine className="h-3 w-3" />
-                                    Deposit SUI
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={depositAmount}
-                                        onChange={(e) => setDepositAmount(e.target.value)}
-                                        className="flex-1 bg-background border rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-primary outline-none"
-                                        placeholder="0.00"
-                                        disabled={isDepositing}
-                                    />
-                                    <Button
-                                        onClick={handleDeposit}
-                                        disabled={!depositAmount || isDepositing}
-                                        className="px-3 py-1.5 text-xs h-auto"
-                                        size="sm"
-                                    >
-                                        {isDepositing ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        ) : (
-                                            'Deposit'
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Withdraw Section */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                    <ArrowUpFromLine className="h-3 w-3" />
-                                    Withdraw SUI
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={withdrawAmount}
-                                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                                        className="flex-1 bg-background border rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-primary outline-none"
-                                        placeholder="0.00"
-                                        disabled={isWithdrawing}
-                                    />
-                                    <Button
-                                        onClick={handleWithdraw}
-                                        disabled={!withdrawAmount || isWithdrawing}
-                                        className="px-3 py-1.5 text-xs h-auto"
-                                        size="sm"
-                                        variant="outline"
-                                    >
-                                        {isWithdrawing ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        ) : (
-                                            'Withdraw'
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Balance Display */}
-                            <div className="pt-2 border-t">
-                                <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
-                                    Available Balance
-                                </div>
-                                <div className="text-sm font-mono">
-                                    {balance
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                                No BalanceManager found. Deposit to create one.
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                    <ArrowDownToLine className="h-3 w-3" />
-                                    Initial Deposit (SUI)
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={depositAmount}
-                                        onChange={(e) => setDepositAmount(e.target.value)}
-                                        className="flex-1 bg-background border rounded-md px-2 py-1.5 text-xs focus:ring-1 focus:ring-primary outline-none"
-                                        placeholder="0.00"
-                                        disabled={isDepositing}
-                                    />
-                                    <Button
-                                        onClick={handleDeposit}
-                                        disabled={!depositAmount || isDepositing}
-                                        className="px-3 py-1.5 text-xs h-auto"
-                                        size="sm"
-                                    >
-                                        {isDepositing ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        ) : (
-                                            'Create & Deposit'
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
+                    {balanceManager && (
+                        <div className="text-[10px] text-muted-foreground font-mono truncate">
+                            ID: {balanceManager.slice(0, 8)}...{balanceManager.slice(-6)}
                         </div>
                     )}
+
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Available (SUI)</span>
+                        <span className="font-mono">
+                            {(balance ?? 0).toFixed(4)}
+                        </span>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Button
+                            className="w-full rounded-md py-2.5 text-sm font-semibold"
+                            onClick={() => setIsDepositModalOpen(true)}
+                            disabled={isDepositing}
+                        >
+                            Deposit
+                        </Button>
+                        <div className="flex gap-2">
+
+                            <Button
+                                className="flex-1 rounded-md py-2 text-sm"
+                                variant="outline"
+                                onClick={() => setIsWithdrawModalOpen(true)}
+                                disabled={isWithdrawing || !balanceManager}
+                            >
+                                Withdraw
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Deposit Modal */}
+            {isDepositModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl">
+                        <div className="flex items-center justify-between px-6 pt-6">
+                            <div className="mx-auto text-center">
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
+                                    <span className="text-2xl">$</span>
+                                </div>
+                                <h2 className="text-lg font-semibold">
+                                    Deposit SUI
+                                </h2>
+                            </div>
+                            <button
+                                className="ml-4 text-xl text-muted-foreground hover:text-foreground"
+                                onClick={() => setIsDepositModalOpen(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="px-6 pb-6 pt-4 space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground uppercase">
+                                    Asset
+                                </label>
+                                <select
+                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    value="SUI"
+                                    disabled
+                                >
+                                    <option value="SUI">SUI</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground uppercase">
+                                    Amount
+                                </label>
+                                <input
+                                    type="number"
+                                    value={depositAmount}
+                                    onChange={(e) => setDepositAmount(e.target.value)}
+                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    placeholder="0.00"
+                                    disabled={isDepositing}
+                                />
+                            </div>
+
+                            <Button
+                                className="mt-2 w-full rounded-md py-2.5 text-sm font-semibold"
+                                disabled={!depositAmount || isDepositing}
+                                onClick={async () => {
+                                    const ok = await handleDeposit();
+                                    if (ok) {
+                                        setIsDepositModalOpen(false);
+                                    }
+                                }}
+                            >
+                                {isDepositing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    'Done'
+                                )}
+                            </Button>
+
+                            <p className="mt-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+                                IMPORTANT: This balance manager currently only accepts native SUI deposits. Do not send other assets.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Withdraw Modal */}
+            {isWithdrawModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl">
+                        <div className="flex items-center justify-between px-6 pt-6">
+                            <div className="mx-auto text-center">
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
+                                    <span className="text-2xl">$</span>
+                                </div>
+                                <h2 className="text-lg font-semibold">
+                                    Withdraw SUI
+                                </h2>
+                            </div>
+                            <button
+                                className="ml-4 text-xl text-muted-foreground hover:text-foreground"
+                                onClick={() => setIsWithdrawModalOpen(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="px-6 pb-6 pt-4 space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground uppercase">
+                                    Asset
+                                </label>
+                                <select
+                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    value="SUI"
+                                    disabled
+                                >
+                                    <option value="SUI">SUI</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground uppercase">
+                                    Amount
+                                </label>
+                                <input
+                                    type="number"
+                                    value={withdrawAmount}
+                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    placeholder="0.00"
+                                    disabled={isWithdrawing}
+                                />
+                            </div>
+
+                            <Button
+                                className="mt-2 w-full rounded-md py-2.5 text-sm font-semibold"
+                                disabled={!withdrawAmount || isWithdrawing || !balanceManager}
+                                onClick={async () => {
+                                    const ok = await handleWithdraw();
+                                    if (ok) {
+                                        setIsWithdrawModalOpen(false);
+                                    }
+                                }}
+                            >
+                                {isWithdrawing ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    'Done'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
