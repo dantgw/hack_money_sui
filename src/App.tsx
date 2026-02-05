@@ -3,13 +3,15 @@ import { TrendingUp } from "lucide-react";
 import { DeepBookTrading } from "./components/DeepBookTrading";
 import { Button } from "./components/ui/button";
 import { Toaster } from "sonner";
+import { NETWORK_STORAGE_KEY } from "./dApp-kit";
 
 function App() {
   const currentNetwork = useCurrentNetwork();
   const dAppKit = useDAppKit();
 
   const toggleNetwork = () => {
-    const newNetwork = currentNetwork === 'mainnet' ? 'testnet' : 'mainnet';
+    const newNetwork = currentNetwork === "mainnet" ? "testnet" : "mainnet";
+    window.localStorage.setItem(NETWORK_STORAGE_KEY, newNetwork);
     dAppKit.switchNetwork(newNetwork);
   };
 

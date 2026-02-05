@@ -6,6 +6,8 @@ import {
   MAINNET_COUNTER_PACKAGE_ID,
 } from "./constants.ts";
 
+export const NETWORK_STORAGE_KEY = "varuna-selected-network";
+
 const GRPC_URLS = {
   mainnet: "https://fullnode.mainnet.sui.io:443",
   testnet: "https://fullnode.testnet.sui.io:443",
@@ -27,10 +29,20 @@ const MVR_OVERRIDES = {
   },
 } as const;
 
+type NetworkName = keyof typeof GRPC_URLS;
+
+let defaultNetwork: NetworkName = "mainnet";
+if (typeof window !== "undefined") {
+  const stored = window.localStorage.getItem(NETWORK_STORAGE_KEY) as NetworkName | null;
+  if (stored && stored in GRPC_URLS) {
+    defaultNetwork = stored;
+  }
+}
+
 export const dAppKit = createDAppKit({
   enableBurnerWallet: import.meta.env.DEV,
   networks: ["mainnet", "testnet", "devnet"],
-  defaultNetwork: "mainnet",
+  defaultNetwork,
   createClient(network) {
     return new SuiGrpcClient({
       network,
