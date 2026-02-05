@@ -10,12 +10,30 @@ import { cn } from '../lib/utils';
 const COIN_TYPE_MAP: Record<'mainnet' | 'testnet', Record<string, string>> = {
     mainnet: {
         SUI: '0x2::sui::SUI',
+        DEEP: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+        USDC: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
+        BETH: '0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH',
+        WUSDT: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN',
+        WUSDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
+        NS: '0x5145494a5f5100e645e4b0aa950fa6b68f614e8c59e17bc5ded3495123a79178::ns::NS',
+        TYPUS: '0xf82dc05634970553615eef6112a1ac4fb7bf10272bf6cbe0f80ef44a6c489385::typus::TYPUS',
+        AUSD: '0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD',
+        DRF: '0x294de7579d55c110a00a7c4946e09a1b5cbeca2592fbb83fd7bfacba3cfeaf0e::drf::DRF',
+        SEND: '0xb45fcfcc2cc07ce0702cc2d229621e046c906ef14d9b25e8e4d25f6e8763fef7::send::SEND',
+        XBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
+        WAL: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+        IKA: '0x7262fb2f7a3a14c888c438a3cd9b912469a58cf60f367352c46584262e8299aa::ika::IKA',
+        ALKIMI: '0x1a8f4bc33f8ef7fbc851f156857aa65d397a6a6fd27a7ac2ca717b51f2fd9489::alkimi::ALKIMI',
+        WBTC: '0x0041f9f9344cac094454cd574e333c4fdb132d7bcc9379bcd4aab485b2a63942::wbtc::WBTC'
         // TODO: Add additional mainnet coin types (e.g. DEEP, USDC, etc.)
     },
     testnet: {
         SUI: '0x2::sui::SUI',
         DEEP: '0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP',
-        // TODO: Add additional testnet coin types
+        DBUSDC: '0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7::DBUSDC::DBUSDC',
+        DBUSDT: '0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7::DBUSDT::DBUSDT',
+        WAL: '0x9ef7676a9f81937a52ae4b2af8d511a28a0b080477c0c2db40b0ab8882240d76::wal::WAL',
+        DBTC: '0x6502dae813dbe5e42643c119a6450a518481f03063febc7e20238e43b6ea9e86::dbtc::DBTC'
     },
 };
 
@@ -116,6 +134,9 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                                 baseType,
                                 network,
                             );
+                            console.log("rawBase:", rawBase);
+                            console.log("poolInfo.baseAssetDecimals:", poolInfo.baseAssetDecimals);
+                            console.log("Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals):", Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals));
                             setBaseBalance(
                                 Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals),
                             );
@@ -131,6 +152,9 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                                 quoteType,
                                 network,
                             );
+                            console.log("rawQuote:", rawQuote);
+                            console.log("poolInfo.quoteAssetDecimals:", poolInfo.quoteAssetDecimals);
+                            console.log("Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals):", Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals));
                             setQuoteBalance(
                                 Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals),
                             );
@@ -605,7 +629,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                             {isPlacingOrder ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                `${side === 'buy' ? 'Long' : 'Short'} ${baseSymbol}`
+                                `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} `
                             )}
                         </Button>
                     ) : (
