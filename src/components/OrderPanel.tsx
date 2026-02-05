@@ -38,9 +38,10 @@ function getTypeArgumentsForPool(
 interface OrderPanelProps {
     poolInfo: PoolInfo | null;
     currentPrice: number;
+    selectedPriceFromOrderBook?: number | null;
 }
 
-export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
+export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook }: OrderPanelProps) {
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
     const dAppKit = useDAppKit();
@@ -53,7 +54,9 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
 
     // BalanceManager state
     const [balanceManager, setBalanceManager] = useState<string | null>(null);
-    const [balance, setBalance] = useState<number | null>(0);
+    const [balance, setBalance] = useState<number | null>(0); // SUI balance in BalanceManager
+    const [baseBalance, setBaseBalance] = useState<number | null>(null);
+    const [quoteBalance, setQuoteBalance] = useState<number | null>(null);
 
     const [isLoadingBalanceManager, setIsLoadingBalanceManager] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
@@ -64,6 +67,14 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
 
     const baseSymbol = poolInfo?.baseCoin || 'SUI';
     const quoteSymbol = poolInfo?.quoteCoin || 'USDC';
+
+    // When user clicks on an order book row, switch to limit order and set the price
+    useEffect(() => {
+        if (selectedPriceFromOrderBook != null) {
+            setOrderType('limit');
+            setPrice(selectedPriceFromOrderBook.toString());
+        }
+    }, [selectedPriceFromOrderBook]);
 
     // Fetch BalanceManager when account changes
     useEffect(() => {
@@ -77,16 +88,71 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
             try {
                 const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
                 const bm = await getBalanceManager(client, currentAccount.address, network);
-                let balance = 0;
-                if (bm) {
-                    balance = Number(await getBalanceForCoin(client, currentAccount.address, bm, '0x2::sui::SUI', network)) / 1_000_000_000;
 
+                let suiBalance = 0;
+                if (bm) {
+                    // SUI balance (always available for deposit / withdraw UI)
+                    suiBalance = Number(
+                        await getBalanceForCoin(
+                            client,
+                            currentAccount.address,
+                            bm,
+                            '0x2::sui::SUI',
+                            network,
+                        ),
+                    ) / 1_000_000_000;
+
+                    // Pool-specific balances for Available display
+                    if (poolInfo && (currentNetwork === 'mainnet' || currentNetwork === 'testnet')) {
+                        const networkKey = currentNetwork as 'mainnet' | 'testnet';
+                        const baseType = COIN_TYPE_MAP[networkKey]?.[poolInfo.baseCoin];
+                        const quoteType = COIN_TYPE_MAP[networkKey]?.[poolInfo.quoteCoin];
+
+                        if (baseType) {
+                            const rawBase = await getBalanceForCoin(
+                                client,
+                                currentAccount.address,
+                                bm,
+                                baseType,
+                                network,
+                            );
+                            setBaseBalance(
+                                Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals),
+                            );
+                        } else {
+                            setBaseBalance(null);
+                        }
+
+                        if (quoteType) {
+                            const rawQuote = await getBalanceForCoin(
+                                client,
+                                currentAccount.address,
+                                bm,
+                                quoteType,
+                                network,
+                            );
+                            setQuoteBalance(
+                                Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals),
+                            );
+                        } else {
+                            setQuoteBalance(null);
+                        }
+                    } else {
+                        setBaseBalance(null);
+                        setQuoteBalance(null);
+                    }
+                } else {
+                    setBaseBalance(null);
+                    setQuoteBalance(null);
                 }
+
                 setBalanceManager(bm);
-                setBalance(balance);
+                setBalance(suiBalance);
             } catch (error) {
                 console.error('Error fetching BalanceManager:', error);
                 setBalanceManager(null);
+                setBaseBalance(null);
+                setQuoteBalance(null);
             } finally {
                 setIsLoadingBalanceManager(false);
             }
@@ -96,7 +162,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
         // Refresh every 10 seconds
         const interval = setInterval(fetchBalanceManager, 10000);
         return () => clearInterval(interval);
-    }, [currentAccount?.address, client, currentNetwork]);
+    }, [currentAccount?.address, client, currentNetwork, poolInfo]);
 
     // Handle deposit with BalanceManager creation if needed
     const handleDeposit = async () => {
@@ -515,7 +581,14 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
                     <div className="pt-4 space-y-2">
                         <div className="flex justify-between text-[11px] text-muted-foreground">
                             <span>Available</span>
-                            <span>0.00 {side === 'buy' ? quoteSymbol : baseSymbol}</span>
+                            <span>
+                                {(
+                                    side === 'buy'
+                                        ? quoteBalance ?? 0
+                                        : baseBalance ?? 0
+                                ).toFixed(4)}{' '}
+                                {side === 'buy' ? quoteSymbol : baseSymbol}
+                            </span>
                         </div>
                         <div className="flex justify-between text-[11px] text-muted-foreground">
                             <span>Order Value</span>

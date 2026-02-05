@@ -27,6 +27,7 @@ export function DeepBookTrading() {
   const [interval, setInterval] = useState<Interval>('1h');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const network = useCurrentNetwork();
+  const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
 
   useEffect(() => {
     const loadPools = async () => {
@@ -324,7 +325,11 @@ export function DeepBookTrading() {
 
         {/* Middle Section: Order Book (Fixed Width) */}
         <div className="w-[400px] shrink-0 flex flex-col border-r bg-background overflow-hidden">
-          <OrderBook poolName={selectedPool || ''} network={network} />
+          <OrderBook
+            poolName={selectedPool || ''}
+            network={network}
+            onSelectPrice={(price) => setSelectedPriceFromOrderBook(price)}
+          />
         </div>
 
         {/* Right Section: Order Entry Panel (Fixed Width) */}
@@ -332,6 +337,7 @@ export function DeepBookTrading() {
           <OrderPanel
             poolInfo={selectedPoolInfo || null}
             currentPrice={marketPrice?.midPrice || 0}
+            selectedPriceFromOrderBook={selectedPriceFromOrderBook}
           />
         </div>
       </div>

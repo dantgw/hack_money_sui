@@ -4,11 +4,12 @@ import { getOrderBook, OrderBookData, getRecentTrades, Trade } from '../lib/deep
 interface OrderBookProps {
     poolName: string;
     network: 'mainnet' | 'testnet' | 'devnet';
+    onSelectPrice?: (price: number) => void;
 }
 
 type TabType = 'orderbook' | 'trades';
 
-export function OrderBook({ poolName, network }: OrderBookProps) {
+export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) {
     const [activeTab, setActiveTab] = useState<TabType>('orderbook');
     const [orderBookData, setOrderBookData] = useState<OrderBookData | null>(null);
     const [trades, setTrades] = useState<Trade[]>([]);
@@ -92,7 +93,11 @@ export function OrderBook({ poolName, network }: OrderBookProps) {
                             {/* Asks (Sells) - Red */}
                             <div className="flex flex-col-reverse">
                                 {orderBookData.asks.map((ask, i) => (
-                                    <div key={`ask-${i}`} className="grid grid-cols-3 p-1 hover:bg-red-500/10 relative">
+                                    <div
+                                        key={`ask-${i}`}
+                                        className="grid grid-cols-3 p-1 hover:bg-red-500/10 relative cursor-pointer"
+                                        onClick={() => onSelectPrice?.(ask.price)}
+                                    >
                                         <div
                                             className="absolute inset-y-0 right-0 bg-red-500/5 transition-all"
                                             style={{ width: `${(ask.price * ask.quantity / maxTotal) * 100}%` }}
@@ -112,7 +117,11 @@ export function OrderBook({ poolName, network }: OrderBookProps) {
                             {/* Bids (Buys) - Green */}
                             <div>
                                 {orderBookData.bids.map((bid, i) => (
-                                    <div key={`bid-${i}`} className="grid grid-cols-3 p-1 hover:bg-green-500/10 relative">
+                                    <div
+                                        key={`bid-${i}`}
+                                        className="grid grid-cols-3 p-1 hover:bg-green-500/10 relative cursor-pointer"
+                                        onClick={() => onSelectPrice?.(bid.price)}
+                                    >
                                         <div
                                             className="absolute inset-y-0 right-0 bg-green-500/5 transition-all"
                                             style={{ width: `${(bid.price * bid.quantity / maxTotal) * 100}%` }}
