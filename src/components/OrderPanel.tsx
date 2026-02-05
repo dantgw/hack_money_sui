@@ -2,9 +2,37 @@ import { useState, useEffect } from 'react';
 import { useCurrentAccount, ConnectButton, useCurrentClient, useDAppKit, useCurrentNetwork } from '@mysten/dapp-kit-react';
 import { Transaction } from '@mysten/sui/transactions';
 import { Button } from './ui/button';
-import { getDeepBookPackageId, getBalanceManager, getRegistryId, getBalanceForCoin, placeMarketOrder, PoolInfo, placeLimitOrder } from '../lib/deepbook';
+import { getDeepBookPackageId, getBalanceManager, getRegistryId, getBalanceForCoin, PoolInfo } from '../lib/deepbook';
 import { Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { toast } from 'sonner';
+
+const COIN_TYPE_MAP: Record<'mainnet' | 'testnet', Record<string, string>> = {
+    mainnet: {
+        SUI: '0x2::sui::SUI',
+        // TODO: Add additional mainnet coin types (e.g. DEEP, USDC, etc.)
+    },
+    testnet: {
+        SUI: '0x2::sui::SUI',
+        DEEP: '0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP',
+        // TODO: Add additional testnet coin types
+    },
+};
+
+function getTypeArgumentsForPool(
+    network: 'mainnet' | 'testnet',
+    poolInfo: PoolInfo,
+): [string, string] {
+    const baseType = COIN_TYPE_MAP[network]?.[poolInfo.baseCoin];
+    const quoteType = COIN_TYPE_MAP[network]?.[poolInfo.quoteCoin];
+
+    if (!baseType || !quoteType) {
+        throw new Error(
+            `Missing coin type mapping for ${network}: base=${poolInfo.baseCoin}, quote=${poolInfo.quoteCoin}`,
+        );
+    }
+
+    return [baseType, quoteType];
+}
 
 interface OrderPanelProps {
     poolInfo: PoolInfo | null;
@@ -20,7 +48,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
     const [side, setSide] = useState<'buy' | 'sell'>('buy');
     const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
     const [price, setPrice] = useState(currentPrice.toString());
-    const [size, setSize] = useState('');
+    const [size, setSize] = useState('10');
 
     // BalanceManager state
     const [balanceManager, setBalanceManager] = useState<string | null>(null);
@@ -237,9 +265,9 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
             return;
         }
 
-        if (parseFloat(size) <= 0) {
+        if (parseFloat(size) < 10) {
             toast.error('Invalid size', {
-                description: 'Please enter a valid order size',
+                description: 'Minimum order size is 10',
             });
             return;
         }
@@ -251,9 +279,9 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
             const network = currentNetwork as 'mainnet' | 'testnet';
             const priceNum = parseFloat(price || '0');
             const sizeNum = parseFloat(size);
-
             if (orderType === 'limit') {
                 const packageId = getDeepBookPackageId(network);
+                const typeArguments = getTypeArgumentsForPool(network, poolInfo);
 
                 // Generate trade proof
                 const [proof] = tx.moveCall({
@@ -291,7 +319,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
 
                 tx.moveCall({
                     target: `${packageId}::pool::place_limit_order`,
-                    typeArguments: ["0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", "0x2::sui::SUI"],
+                    typeArguments,
                     arguments: [
                         tx.object(poolInfo.poolId),        // self: Pool
                         tx.object(balanceManager),         // balance_manager: BalanceManager
@@ -310,6 +338,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
 
             } else {
                 const packageId = getDeepBookPackageId(network);
+                const typeArguments = getTypeArgumentsForPool(network, poolInfo);
 
                 // Generate trade proof
                 const [proof] = tx.moveCall({
@@ -335,7 +364,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
 
                 tx.moveCall({
                     target: `${packageId}::pool::place_market_order`,
-                    typeArguments: ["0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", "0x2::sui::SUI"],
+                    typeArguments,
                     arguments: [
                         tx.object(poolInfo.poolId),        // self: Pool
                         tx.object(balanceManager),         // balance_manager: BalanceManager
@@ -582,6 +611,7 @@ export function OrderPanel({ poolInfo, currentPrice }: OrderPanelProps) {
                         <label className="text-xs text-muted-foreground uppercase font-bold">Size ({baseSymbol})</label>
                         <input
                             type="number"
+                            min={10}
                             value={size}
                             onChange={(e) => setSize(e.target.value)}
                             className="w-full bg-muted/50 border rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
