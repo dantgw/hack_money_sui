@@ -11,7 +11,7 @@ interface AccountPanelProps {
 }
 
 export function AccountPanel({ poolName }: AccountPanelProps) {
-    const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'trades' | 'orderHistory'>('positions');
+    const [activeTab, setActiveTab] = useState<'orders' | 'orderHistory'>('orders');
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
     const dAppKit = useDAppKit();
@@ -27,9 +27,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
     const openOrders = orders.filter((order) => order.status === 'placed');
 
     const tabs = [
-        { id: 'positions', label: 'Positions' },
         { id: 'orders', label: `Open Orders${openOrders.length > 0 ? ` (${openOrders.length})` : ''}` },
-        { id: 'trades', label: 'Trade History' },
         { id: 'orderHistory', label: 'Order History' },
     ] as const;
 
@@ -164,13 +162,6 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
             </div>
 
             <div className="flex-1 overflow-auto p-4">
-                {activeTab === 'positions' && (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-2">
-                        <p className="text-sm">No open positions</p>
-                        <p className="text-xs italic">Start trading to see your positions here</p>
-                    </div>
-                )}
-
                 {activeTab === 'orders' && (
                     <div className="w-full">
                         {isLoadingOrders ? (
@@ -243,30 +234,6 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                 </table>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {activeTab === 'trades' && (
-                    <div className="w-full">
-                        <table className="w-full text-left text-xs">
-                            <thead className="text-muted-foreground border-b uppercase tracking-tight">
-                                <tr>
-                                    <th className="pb-2">Time</th>
-                                    <th className="pb-2">Pool</th>
-                                    <th className="pb-2">Side</th>
-                                    <th className="pb-2 text-right">Price</th>
-                                    <th className="pb-2 text-right">Size</th>
-                                    <th className="pb-2 text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                <tr>
-                                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                                        No trade history
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 )}
 
