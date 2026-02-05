@@ -4,6 +4,7 @@ import "./index.css";
 
 import { DAppKitProvider } from "@mysten/dapp-kit-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { dAppKit } from "./dApp-kit.ts";
 
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <DAppKitProvider dAppKit={dAppKit}>
-        <App />
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </DAppKitProvider>
     </QueryClientProvider>
   </React.StrictMode>,

@@ -5,6 +5,9 @@ import { Button } from "./components/ui/button";
 import { Toaster } from "sonner";
 import { NETWORK_STORAGE_KEY } from "./dApp-kit";
 
+import { Link, Route, Routes } from "react-router-dom";
+import { OptionsPage } from "./components/OptionsPage";
+
 function App() {
   const currentNetwork = useCurrentNetwork();
   const dAppKit = useDAppKit();
@@ -17,17 +20,16 @@ function App() {
 
   return (
     <div className="min-h-screen">
-
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="w-full flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold">Varuna</h1>
             <nav className="flex gap-2">
-
-              <TrendingUp className="inline h-4 w-4 mr-1" />
-              DeepBook
-
-
+              <Link to="/">
+                <TrendingUp className="inline h-4 w-4 mr-1" />
+                DeepBook
+              </Link>
+              <Link to="/options">Options</Link>
             </nav>
           </div>
 
@@ -38,19 +40,18 @@ function App() {
               onClick={toggleNetwork}
               className="font-medium"
             >
-              {currentNetwork === 'mainnet' ? 'Mainnet' : 'Testnet'}
+              {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
             </Button>
             <ConnectButton />
           </div>
-
         </div>
       </header>
 
-
-      <main className={"h-screen"}>
-
-        <DeepBookTrading />
-
+      <main className="h-screen">
+        <Routes>
+          <Route path="/" element={<DeepBookTrading />} />
+          <Route path="/options" element={<OptionsPage />} />
+        </Routes>
       </main>
       <Toaster
         position="bottom-right"
@@ -58,9 +59,9 @@ function App() {
         closeButton
         toastOptions={{
           style: {
-            background: 'hsl(var(--background))',
-            border: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--foreground))',
+            background: "hsl(var(--background))",
+            border: "1px solid hsl(var(--border))",
+            color: "hsl(var(--foreground))",
           },
         }}
       />
