@@ -701,3 +701,159 @@ export function placeMarketOrder(
     throw error;
   }
 }
+
+// =============== Order Management Functions ===============
+
+export interface Order {
+  order_id: string;
+  pool_name: string;
+  balance_manager_id: string;
+  client_order_id: string;
+  order_type: string;
+  side: 'buy' | 'sell';
+  price: number;
+  quantity: number;
+  filled_quantity: number;
+  remaining_quantity: number;
+  status: string;
+  timestamp: number;
+  is_bid: boolean;
+}
+
+/**
+ * Get orders for a balance manager from DeepBook Indexer
+ * Reference: https://docs.sui.io/standards/deepbookv3-indexer
+ * 
+ * @param poolName - Pool name (e.g., "SUI_USDC")
+ * @param balanceManagerId - BalanceManager ID
+ * @param network - Network to query (mainnet or testnet)
+ * @param limit - Number of orders to return (default: 100)
+ * @param status - Order status filter (e.g., "open", "filled", "canceled")
+ */
+export async function getOrders(
+  poolName: string,
+  balanceManagerId: string,
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet',
+): Promise<Order[]> {
+  try {
+    const indexerUrl = getIndexerUrl(network);
+
+
+
+    const url = `${indexerUrl}/orders/${poolName}/${balanceManagerId}`;
+    console.log("url:", url);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Orders fetch failed:', response.status, errorText);
+      // Return empty array if no orders found (404) rather than throwing
+      if (response.status === 404) {
+        return [];
+      }
+      throw new Error(`Failed to fetch orders: ${response.statusText}`);
+    }
+
+    const data: any[] = await response.json();
+    console.log("orders:", data);
+    // Transform the orders to our Order format
+    const orders: Order[] = data.map((order: any) => {
+      // Handle timestamp conversion (API may return seconds or milliseconds)
+      let timestamp = order.timestamp || order.created_at || Date.now();
+      // If timestamp is in seconds (less than 13 digits), convert to milliseconds
+      if (timestamp < 1000000000000) {
+        timestamp = timestamp * 1000;
+      }
+
+      // Determine side from multiple possible fields
+      let side: 'buy' | 'sell' = 'sell';
+      if (order.is_bid !== undefined) {
+        side = order.is_bid ? 'buy' : 'sell';
+      } else if (order.type) {
+        side = order.type.toLowerCase() === 'buy' ? 'buy' : 'sell';
+      } else if (order.side) {
+        side = order.side.toLowerCase() === 'buy' ? 'buy' : 'sell';
+      }
+
+      return {
+        order_id: order.order_id || order.orderId,
+        pool_name: order.pool_name || order.poolName,
+        balance_manager_id: order.balance_manager_id || order.balanceManagerId,
+        client_order_id: order.client_order_id || order.clientOrderId,
+        order_type: order.order_type || order.orderType || 'limit',
+        side,
+        price: parseFloat(order.price || '0'),
+        quantity: parseFloat(order.quantity || order.base_asset_quantity || order.original_quantity || '0'),
+        filled_quantity: parseFloat(order.filled_quantity || order.filledQuantity || '0'),
+        remaining_quantity: parseFloat(order.remaining_quantity || order.remainingQuantity || order.quantity - (order.filled_quantity || order.filledQuantity || 0)),
+        status: order.status || order.current_status || 'open',
+        timestamp: timestamp || order.placed_at || order.last_updated_at || Date.now(),
+        is_bid: side === 'buy',
+      };
+    });
+
+    return orders;
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
+}
+
+/**
+ * Cancel an order using DeepBook SDK
+ * @param tx - Transaction object to add the cancel to
+ * @param client - Sui client instance
+ * @param userAddress - User's address
+ * @param poolInfo - Pool information including poolId and coin symbols
+ * @param balanceManagerId - BalanceManager ID for the user
+ * @param orderId - Order ID to cancel (u128 as string)
+ * @param network - Network to use (mainnet or testnet)
+ */
+export function cancelOrder(
+  tx: Transaction,
+  client: SuiGrpcClient,
+  userAddress: string,
+  poolInfo: PoolInfo,
+  balanceManagerId: string,
+  orderId: string,
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'
+): void {
+  try {
+    // Initialize DeepBookClient with the client and user address
+    const sdkNetwork = network === 'devnet' ? 'testnet' : network;
+    const deepBookClient = new DeepBookClient({
+      client,
+      address: userAddress,
+      network: sdkNetwork,
+      // Register pool and balance manager using their IDs as keys
+      pools: {
+        [poolInfo.poolId]: {
+          address: poolInfo.poolId,
+          baseCoin: poolInfo.baseCoin,
+          quoteCoin: poolInfo.quoteCoin,
+        },
+      },
+      balanceManagers: {
+        'default': {
+          address: balanceManagerId,
+        },
+      },
+    });
+
+    // Set the transaction sender to the user address
+    tx.setSender(userAddress);
+
+    // Cancel the order using the SDK
+    const cancelOrderFn = deepBookClient.deepBook.cancelOrder(
+      poolInfo.poolId,
+      'default',
+      orderId
+    );
+
+    // Apply the cancel order to the transaction
+    cancelOrderFn(tx);
+  } catch (error) {
+    console.error('Error canceling order:', error);
+    throw error;
+  }
+}

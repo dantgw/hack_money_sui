@@ -36,8 +36,9 @@ export function DeepBookTrading() {
         setPools(availablePools);
 
         if (availablePools.length > 0) {
-          const suiUsdcPool = availablePools.find(p => p.poolName === 'SUI_USDC');
-          setSelectedPool(suiUsdcPool?.poolName || availablePools[0].poolName);
+          const preferredPoolName = network === 'mainnet' ? 'SUI_USDC' : 'DEEP_SUI';
+          const preferredPool = availablePools.find(p => p.poolName === preferredPoolName);
+          setSelectedPool(preferredPool?.poolName || availablePools[0].poolName);
         }
       } catch (error) {
         console.error('Error loading pools:', error);
