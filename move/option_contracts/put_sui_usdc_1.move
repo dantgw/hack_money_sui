@@ -1,7 +1,7 @@
 // Example option token module for PUT option on SUI/USDC with strike 1500
 // This demonstrates how to create a PUT option token and pool
 
-module varuna::put_sui_usdc_1500 {
+module varuna::put_sui_usdc_1 {
     use sui::coin::{Self, TreasuryCap};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
@@ -12,22 +12,22 @@ module varuna::put_sui_usdc_1500 {
 
     /// One-Time Witness for this specific option token
     /// Must be named after the module in all uppercase
-    public struct PUT_SUI_USDC_1500 has drop {}
+    public struct PUT_SUI_USDC_1 has drop {}
 
     // Constants for this option
-    const STRIKE_PRICE: u64 = 1_500_000_000_000; // 1500 USDC (with 9 decimals precision)
-    const EXPIRATION_DATE: u64 = 1735689600000; // Example: Jan 1, 2025 00:00:00 UTC in milliseconds
+    const STRIKE_PRICE: u64 = 1_000_000_000; // 1500 USDC (with 9 decimals precision)
+    const EXPIRATION_DATE: u64 = 1798761600000; // Example: Jan 1, 2025 00:00:00 UTC in milliseconds
 
     /// Initialize the option token and create the pool
     /// This runs exactly once when the module is published
-    fun init(witness: PUT_SUI_USDC_1500, ctx: &mut TxContext) {
+    fun init(witness: PUT_SUI_USDC_1, ctx: &mut TxContext) {
         // Create the currency with the One-Time Witness
         let (treasury_cap, metadata) = coin::create_currency(
             witness,
             9,                                      // decimals (9 for Sui standard)
-            b"PUT-SUI-USDC-1500",                  // symbol
-            b"PUT Option SUI/USDC Strike 1500",    // name
-            b"Decentralized PUT option with strike 1500 USDC per SUI", // description
+            b"PUT-SUI-USDC-1",                  // symbol
+            b"PUT Option SUI/USDC Strike 1",    // name
+            b"Decentralized PUT option with strike 1 USDC per SUI", // description
             option::none(),                         // icon URL
             ctx
         );
@@ -43,12 +43,12 @@ module varuna::put_sui_usdc_1500 {
     /// Helper function to create the pool (must be called after init by the treasury_cap holder)
     /// This should be called in a separate transaction after publishing the module
     public fun create_pool<SUI, USDC>(
-        treasury_cap: TreasuryCap<PUT_SUI_USDC_1500>,
+        treasury_cap: TreasuryCap<PUT_SUI_USDC_1>,
         deepbook_pool_id: ID,
         clock: &Clock,
         ctx: &mut TxContext,
     ): ID {
-        options_pool::create_pool<PUT_SUI_USDC_1500, SUI, USDC>(
+        options_pool::create_pool<PUT_SUI_USDC_1, SUI, USDC>(
             treasury_cap,
             1, // OPTION_TYPE_PUT
             STRIKE_PRICE,
@@ -63,6 +63,6 @@ module varuna::put_sui_usdc_1500 {
     
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
-        init(PUT_SUI_USDC_1500 {}, ctx);
+        init(PUT_SUI_USDC_1 {}, ctx);
     }
 }

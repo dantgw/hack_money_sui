@@ -11,49 +11,22 @@ module varuna::options_pool_tests {
 
     use varuna::options_pool;
     use varuna::test_helpers;
+    use varuna::deep;
+    use varuna::usdc;
+    use varuna::call_option_test;
 
-    /// Test-only option token types
-    public struct CALL_OPTION has drop {}
-    public struct PUT_OPTION has drop {}
+    /// Helper: initialize the CALL option currency and return its TreasuryCap.
+    fun init_call_option_currency(scenario: &mut Scenario): coin::TreasuryCap<call_option_test::CALL_OPTION> {
+        // Run the option token init (creates the currency and transfers TreasuryCap to ADMIN)
+        ts::next_tx(scenario, test_helpers::admin());
+        {
+            let ctx = ts::ctx(scenario);
+            call_option_test::init_currency(scenario);
+        };
 
-    /// Helper: create a CALL option currency and return its TreasuryCap.
-    fun create_call_option_currency(scenario: &mut Scenario): coin::TreasuryCap<CALL_OPTION> {
+        // Retrieve TreasuryCap from ADMIN
         ts::next_tx(scenario, test_helpers::admin());
-        let ctx = ts::ctx(scenario);
-        let (treasury, metadata) = coin::create_currency(
-            CALL_OPTION {},
-            9,
-            b"CALL-TEST",
-            b"CALL Test Option",
-            b"Test CALL option token",
-            option::none(),
-            ctx,
-        );
-        transfer::public_freeze_object(metadata);
-        // Store TreasuryCap with admin so we can reuse it across transactions
-        transfer::public_transfer(treasury, test_helpers::admin());
-        // Retrieve it back as a value to return to caller
-        ts::next_tx(scenario, test_helpers::admin());
-        ts::take_from_sender<coin::TreasuryCap<CALL_OPTION>>(scenario)
-    }
-
-    /// Helper: create a PUT option currency and return its TreasuryCap.
-    fun create_put_option_currency(scenario: &mut Scenario): coin::TreasuryCap<PUT_OPTION> {
-        ts::next_tx(scenario, test_helpers::admin());
-        let ctx = ts::ctx(scenario);
-        let (treasury, metadata) = coin::create_currency(
-            PUT_OPTION {},
-            9,
-            b"PUT-TEST",
-            b"PUT Test Option",
-            b"Test PUT option token",
-            option::none(),
-            ctx,
-        );
-        transfer::public_freeze_object(metadata);
-        transfer::public_transfer(treasury, test_helpers::admin());
-        ts::next_tx(scenario, test_helpers::admin());
-        ts::take_from_sender<coin::TreasuryCap<PUT_OPTION>>(scenario)
+        ts::take_from_sender<coin::TreasuryCap<call_option_test::CALL_OPTION>>(scenario)
     }
 
     /// Ensure that create_pool aborts if the option token supply is non-zero.
@@ -62,20 +35,11 @@ module varuna::options_pool_tests {
     fun test_create_pool_rejects_nonzero_supply() {
         let mut scenario = ts::begin(test_helpers::admin());
 
-        // Create option currency and pre-mint some tokens (non-zero supply)
+        // Initialize option currency and pre-mint some tokens (non-zero supply)
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
             let ctx = ts::ctx(&mut scenario);
-            let (mut treasury, metadata) = coin::create_currency(
-                CALL_OPTION {},
-                9,
-                b"CALL-TEST",
-                b"CALL Test Option",
-                b"Test CALL option token",
-                option::none(),
-                ctx,
-            );
-            transfer::public_freeze_object(metadata);
+            let mut treasury = init_call_option_currency(&mut scenario);
             // Mint a few option tokens to make supply non-zero
             let _coins = coin::mint(&mut treasury, 10, ts::ctx(&mut scenario));
             // Store TreasuryCap with admin for later use
@@ -86,13 +50,13 @@ module varuna::options_pool_tests {
         // Attempt to create pool with non-zero supply TreasuryCap -> should abort
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
-            let treasury = ts::take_from_sender<coin::TreasuryCap<CALL_OPTION>>(&mut scenario);
+            let treasury = ts::take_from_sender<coin::TreasuryCap<call_option_test::CALL_OPTION>>(&mut scenario);
             let clock = test_helpers::create_clock(&mut scenario);
             let strike = test_helpers::usdc(2000); // 2000 USDC with PRICE_DECIMALS
             let expiration = clock::timestamp_ms(&clock) + test_helpers::one_day_ms();
             let deepbook_pool_id = test_helpers::mock_deepbook_pool_id();
 
-            let _pool_id = options_pool::create_pool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            let _pool_id = options_pool::create_pool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>(
                 treasury,
                 0, // OPTION_TYPE_CALL
                 strike,
@@ -127,7 +91,7 @@ module varuna::options_pool_tests {
         };
 
         // Create CALL option currency (zero initial supply)
-        let call_treasury = create_call_option_currency(&mut scenario);
+        let call_treasury = init_call_option_currency(&mut scenario);
 
         // Create a clock and pool
         let clock = test_helpers::create_clock(&mut scenario);
@@ -138,7 +102,7 @@ module varuna::options_pool_tests {
         ts::next_tx(&mut scenario, test_helpers::admin());
         let pool_id = {
             let ctx = ts::ctx(&mut scenario);
-            options_pool::create_pool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            options_pool::create_pool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>(
                 call_treasury,
                 0, // OPTION_TYPE_CALL
                 strike,
@@ -156,12 +120,16 @@ module varuna::options_pool_tests {
         // Writer mints CALL options by depositing SUI collateral
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
-            let mut pool = ts::take_shared<options_pool::OptionsPool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>>(&scenario);
+            let mut pool = ts::take_shared<
+                options_pool::OptionsPool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>
+            >(&scenario);
             // Take SUI collateral from admin
-            let collateral = ts::take_from_sender<coin::Coin<test_helpers::SUI>>(&mut scenario);
+            let collateral = ts::take_from_sender<coin::Coin<deep::DEEP>>(&mut scenario);
             let local_clock = test_helpers::create_clock(&mut scenario);
 
-            let (option_coins, owner_token) = options_pool::mint_call_options<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            let (option_coins, owner_token) = options_pool::mint_call_options<
+                call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC
+            >(
                 &mut pool,
                 collateral,
                 &local_clock,
@@ -183,13 +151,17 @@ module varuna::options_pool_tests {
         // Update price to be in-the-money and exercise some CALL options
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
-            let mut pool = ts::take_shared<options_pool::OptionsPool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>>(&scenario);
-            let mut admin_cap = ts::take_from_sender<options_pool::AdminCap>(&mut scenario);
-            let mut local_clock = test_helpers::create_clock(&mut scenario);
+            let mut pool = ts::take_shared<
+                options_pool::OptionsPool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>
+            >(&scenario);
+            let admin_cap = ts::take_from_sender<options_pool::AdminCap>(&mut scenario);
+            let local_clock = test_helpers::create_clock(&mut scenario);
 
             // Set current price above strike so CALLs are exercisable
             let in_the_money_price = strike + test_helpers::usdc(100); // strike + 100
-            options_pool::update_price_manual<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            options_pool::update_price_manual<
+                call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC
+            >(
                 &admin_cap,
                 &mut pool,
                 in_the_money_price,
@@ -198,10 +170,12 @@ module varuna::options_pool_tests {
             );
 
             // Take some option tokens and USDC payment from admin and exercise
-            let option_coins = ts::take_from_sender<coin::Coin<CALL_OPTION>>(&mut scenario);
-            let payment = ts::take_from_sender<coin::Coin<test_helpers::USDC>>(&mut scenario);
+            let option_coins = ts::take_from_sender<coin::Coin<call_option_test::CALL_OPTION>>(&mut scenario);
+            let payment = ts::take_from_sender<coin::Coin<usdc::USDC>>(&mut scenario);
 
-            let _payout_sui = options_pool::exercise_call_options<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            let _payout_sui = options_pool::exercise_call_options<
+                call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC
+            >(
                 &mut pool,
                 option_coins,
                 payment,
@@ -219,8 +193,12 @@ module varuna::options_pool_tests {
         // Manually mark pool as settled at the same in-the-money price (test-only helper)
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
-            let mut pool = ts::take_shared<options_pool::OptionsPool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>>(&scenario);
-            options_pool::set_settlement_for_testing<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            let mut pool = ts::take_shared<
+                options_pool::OptionsPool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>
+            >(&scenario);
+            options_pool::set_settlement_for_testing<
+                call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC
+            >(
                 &mut pool,
                 strike + test_helpers::usdc(100),
             );
@@ -230,12 +208,18 @@ module varuna::options_pool_tests {
         // Writer claims remaining collateral with owner token
         ts::next_tx(&mut scenario, test_helpers::admin());
         {
-            let mut pool = ts::take_shared<options_pool::OptionsPool<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>>(&scenario);
-            let owner_token = ts::take_from_sender<options_pool::OwnerToken<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>>(
+            let mut pool = ts::take_shared<
+                options_pool::OptionsPool<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>
+            >(&scenario);
+            let owner_token = ts::take_from_sender<
+                options_pool::OwnerToken<call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC>
+            >(
                 &mut scenario,
             );
 
-            let (base_payout, quote_payout) = options_pool::claim_collateral_call<CALL_OPTION, test_helpers::SUI, test_helpers::USDC>(
+            let (base_payout, quote_payout) = options_pool::claim_collateral_call<
+                call_option_test::CALL_OPTION, deep::DEEP, usdc::USDC
+            >(
                 &mut pool,
                 owner_token,
                 ts::ctx(&mut scenario),

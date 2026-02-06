@@ -1,17 +1,17 @@
 // File: tests/test_helpers.move
-//
-// Shared test utilities for the Varuna options protocol.
 
 #[test_only]
 module varuna::test_helpers {
     use sui::test_scenario::{Self as ts, Scenario};
-    use sui::coin::{Self, Coin, TreasuryCap};
+    use sui::coin::{Self, Coin};
+    use sui::balance;
+    use sui::tx_context::TxContext;
     use sui::clock::{Self, Clock};
-    use sui::transfer;
-    use sui::object;
-    use std::option;
-    use varuna::deep;
-    use varuna::usdc;
+    use std::string;
+
+    // Mock coin types for testing
+    public struct SUI has drop {}
+    public struct USDC has drop {}
 
     // Test constants
     const ADMIN: address = @0xAD;
@@ -19,25 +19,54 @@ module varuna::test_helpers {
     const BOB: address = @0xB0B;
     const CAROL: address = @0xCA801;
 
+    const DECIMALS: u8 = 9;
     const PRICE_DECIMALS: u64 = 1_000_000_000;
 
-    // ====== Helper functions ======
+    // Helper functions
 
-    /// Initialize mock SUI coins for testing (delegates to sui_test)
+    /// Initialize mock SUI coins for testing
     public fun init_sui_coin(scenario: &mut Scenario) {
-        deep::init_currency(scenario);
+        ts::next_tx(scenario, ADMIN);
+        {
+            let ctx = ts::ctx(scenario);
+            let (treasury, metadata) = coin::create_currency(
+                SUI {},
+                DECIMALS,
+                b"SUI",
+                b"Sui Token",
+                b"Mock Sui token for testing",
+                option::none(),
+                ctx
+            );
+            transfer::public_freeze_object(metadata);
+            transfer::public_transfer(treasury, ADMIN);
+        };
     }
 
-    /// Initialize mock USDC coins for testing (delegates to usdc)
+    /// Initialize mock USDC coins for testing
     public fun init_usdc_coin(scenario: &mut Scenario) {
-        usdc::init_currency(scenario);
+        ts::next_tx(scenario, ADMIN);
+        {
+            let ctx = ts::ctx(scenario);
+            let (treasury, metadata) = coin::create_currency(
+                USDC {},
+                DECIMALS,
+                b"USDC",
+                b"USD Coin",
+                b"Mock USDC for testing",
+                option::none(),
+                ctx
+            );
+            transfer::public_freeze_object(metadata);
+            transfer::public_transfer(treasury, ADMIN);
+        };
     }
 
     /// Mint SUI coins to an address
     public fun mint_sui(scenario: &mut Scenario, recipient: address, amount: u64) {
         ts::next_tx(scenario, ADMIN);
         {
-            let mut treasury = ts::take_from_sender<TreasuryCap<deep::DEEP>>(scenario);
+            let mut treasury = ts::take_from_sender<coin::TreasuryCap<SUI>>(scenario);
             let ctx = ts::ctx(scenario);
             let coins = coin::mint(&mut treasury, amount, ctx);
             transfer::public_transfer(coins, recipient);
@@ -49,7 +78,7 @@ module varuna::test_helpers {
     public fun mint_usdc(scenario: &mut Scenario, recipient: address, amount: u64) {
         ts::next_tx(scenario, ADMIN);
         {
-            let mut treasury = ts::take_from_sender<TreasuryCap<usdc::USDC>>(scenario);
+            let mut treasury = ts::take_from_sender<coin::TreasuryCap<USDC>>(scenario);
             let ctx = ts::ctx(scenario);
             let coins = coin::mint(&mut treasury, amount, ctx);
             transfer::public_transfer(coins, recipient);
@@ -73,14 +102,12 @@ module varuna::test_helpers {
         object::id_from_address(@0xDEEBB00C)
     }
 
-    // ====== Getter functions for constants ======
-
+    // Getter functions for constants
     public fun admin(): address { ADMIN }
     public fun alice(): address { ALICE }
     public fun bob(): address { BOB }
     public fun carol(): address { CAROL }
-    // Decimals are fixed to 9 for test coins
-    public fun decimals(): u8 { 9 }
+    public fun decimals(): u8 { DECIMALS }
     public fun price_decimals(): u64 { PRICE_DECIMALS }
 
     // Time constants (in milliseconds)
@@ -88,8 +115,7 @@ module varuna::test_helpers {
     public fun one_week_ms(): u64 { 604_800_000 }
     public fun one_month_ms(): u64 { 2_592_000_000 }
 
-    // Amount helpers (scale by PRICE_DECIMALS)
+    // Amount helpers
     public fun sui(amount: u64): u64 { amount * PRICE_DECIMALS }
     public fun usdc(amount: u64): u64 { amount * PRICE_DECIMALS }
 }
-
