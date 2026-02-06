@@ -4,16 +4,19 @@ module varuna::options_pool {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
     use sui::transfer;
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Self, Coin, TreasuryCap};
     use sui::balance::{Self, Balance};
     use sui::clock::{Self, Clock};
-    use sui::dynamic_field as df;
     use std::option::{Self, Option};
     use sui::event;
+    use std::string::{Self, String};
     
     // DeepBook integration
     use deepbook::pool::Pool;
     use deepbook::balance_manager::BalanceManager;
+    
+    // Import option token factory
+    use varuna::option_token_factory::{Self, OPTION_TOKEN, OptionTokenRegistry, OptionTokenInfo};
 
     // ====== Error Codes ======
     const EPoolNotExpired: u64 = 0;
@@ -28,6 +31,7 @@ module varuna::options_pool {
     const EInvalidExpiration: u64 = 9;
     const EInvalidPoolReference: u64 = 10;
     const EPriceStale: u64 = 11;
+    const ENotAuthorized: u64 = 12;
 
     // ====== Constants ======
     const OPTION_TYPE_CALL: u8 = 0;
@@ -38,6 +42,9 @@ module varuna::options_pool {
     
     // Maximum price staleness in milliseconds (5 minutes)
     const MAX_PRICE_STALENESS_MS: u64 = 300_000;
+    
+    // Default decimals for option tokens
+    const OPTION_TOKEN_DECIMALS: u8 = 9;
 
     // ====== Structs ======
 
@@ -50,18 +57,17 @@ module varuna::options_pool {
     }
 
     /// Represents an options pool for a specific strike/expiry combination
-    /// BaseAsset is the underlying asset (e.g., SUI, BTC, ETH)
-    /// QuoteAsset is the quote currency (e.g., USDC, USDT)
+    /// The option tokens are standard Coin<OPTION_TOKEN> that can be traded on DeepBook
     /// 
     /// For Call Options:
     /// - Seller deposits BaseAsset as collateral
-    /// - Buyer pays QuoteAsset premium
-    /// - At exercise: Buyer gets BaseAsset, Seller gets QuoteAsset at strike price
+    /// - Mints OPTION_TOKEN coins (supply increases)
+    /// - Option holders can exercise by paying QuoteAsset to receive BaseAsset
     /// 
     /// For Put Options:
     /// - Seller deposits QuoteAsset as collateral (strike_price * amount)
-    /// - Buyer pays QuoteAsset premium
-    /// - At exercise: Buyer sells BaseAsset at strike price, gets QuoteAsset
+    /// - Mints OPTION_TOKEN coins (supply increases)
+    /// - Option holders can exercise by providing BaseAsset to receive QuoteAsset
     public struct OptionsPool<phantom BaseAsset, phantom QuoteAsset> has key {
         id: UID,
         /// Type of option: 0 = Call, 1 = Put
@@ -71,9 +77,14 @@ module varuna::options_pool {
         /// Expiration timestamp in milliseconds
         expiration_date: u64,
         /// Total options minted (in BaseAsset units)
+        /// This represents the total supply of OPTION_TOKEN
         total_options_minted: u64,
+        /// Treasury capability for minting/burning option tokens
+        treasury_cap: TreasuryCap<OPTION_TOKEN>,
+        /// Option token info
+        token_info: OptionTokenInfo,
         /// Collateral locked in the pool
-        /// For Call: BaseAsset
+        /// For Call: BaseAsset (the underlying asset)
         /// For Put: QuoteAsset (strike_price * amount in QuoteAsset units)
         collateral_balance_base: Balance<BaseAsset>,
         collateral_balance_quote: Balance<QuoteAsset>,
@@ -91,31 +102,14 @@ module varuna::options_pool {
         total_options_exercised: u64,
     }
 
-    /// Owner token - represents claim to collateral after settlement
-    /// Minted 1:1 with options when collateral is deposited
+    /// Owner token - represents claim to residual collateral after settlement
+    /// Minted 1:1 with option tokens when collateral is deposited
+    /// This is NOT a Coin type as it doesn't need to be traded
     public struct OwnerToken<phantom BaseAsset, phantom QuoteAsset> has key, store {
         id: UID,
         /// Amount of owner tokens (in BaseAsset units)
         amount: u64,
         /// Reference to the pool
-        pool_id: ID,
-    }
-
-    /// Option token - represents the right to exercise
-    /// Can be traded on DeepBook
-    public struct OptionToken<phantom BaseAsset, phantom QuoteAsset> has key, store {
-        id: UID,
-        /// Amount of option tokens (in BaseAsset units)
-        amount: u64,
-        /// Reference to the pool
-        pool_id: ID,
-    }
-
-    /// Dynamic field key for option metadata
-    public struct OptionMetadata has store, copy, drop {
-        option_type: u8,
-        strike_price: u64,
-        expiration_date: u64,
         pool_id: ID,
     }
 
@@ -127,6 +121,7 @@ module varuna::options_pool {
         strike_price: u64,
         expiration_date: u64,
         deepbook_pool_id: ID,
+        option_token_symbol: String,
     }
 
     public struct OptionsMinted has copy, drop {
@@ -135,6 +130,7 @@ module varuna::options_pool {
         collateral_type: u8, // 0 = base, 1 = quote
         collateral_amount: u64,
         minter: address,
+        total_supply: u64,
     }
 
     public struct OptionsExercised has copy, drop {
@@ -143,6 +139,7 @@ module varuna::options_pool {
         exerciser: address,
         payout_base: u64,
         payout_quote: u64,
+        total_supply: u64,
     }
 
     public struct PriceUpdated has copy, drop {
@@ -177,12 +174,23 @@ module varuna::options_pool {
     // ====== Pool Creation ======
 
     /// Create a new options pool
-    /// The BaseAsset and QuoteAsset are determined by the DeepBook pool
+    /// This creates a unique OPTION_TOKEN coin type that can be traded on DeepBook
+    /// 
+    /// Parameters:
+    /// - option_type: OPTION_TYPE_CALL (0) or OPTION_TYPE_PUT (1)
+    /// - strike_price: Strike price in QuoteAsset per BaseAsset with PRICE_DECIMALS precision
+    /// - expiration_date: Unix timestamp in milliseconds
+    /// - deepbook_pool_id: ID of the DeepBook pool for price oracle
+    /// - base_symbol: Symbol of base asset (e.g., "SUI")
+    /// - quote_symbol: Symbol of quote asset (e.g., "USDC")
     public fun create_pool<BaseAsset, QuoteAsset>(
+        registry: &mut OptionTokenRegistry,
         option_type: u8,
         strike_price: u64,
         expiration_date: u64,
         deepbook_pool_id: ID,
+        base_symbol: String,
+        quote_symbol: String,
         clock: &Clock,
         ctx: &mut TxContext,
     ): ID {
@@ -191,12 +199,55 @@ module varuna::options_pool {
         assert!(strike_price > 0, EInvalidStrikePrice);
         assert!(expiration_date > clock::timestamp_ms(clock), EInvalidExpiration);
 
-        let pool = OptionsPool<BaseAsset, QuoteAsset> {
+        // Prepare token metadata
+        let option_type_str = if (option_type == OPTION_TYPE_CALL) { 
+            b"CALL" 
+        } else { 
+            b"PUT" 
+        };
+        
+        let strike_display = strike_price / PRICE_DECIMALS;
+        
+        // Generate token symbol, name, and description
+        let symbol = option_token_factory::generate_symbol(
+            option_type_str,
+            *string::bytes(&base_symbol),
+            *string::bytes(&quote_symbol),
+            strike_display,
+            expiration_date,
+        );
+        
+        let name = option_token_factory::generate_name(
+            option_type_str,
+            *string::bytes(&base_symbol),
+            *string::bytes(&quote_symbol),
+        );
+        
+        let description = option_token_factory::generate_description(
+            option_type_str,
+            strike_display,
+            expiration_date,
+        );
+
+        // Create the option token currency
+        let (treasury_cap, mut token_info) = option_token_factory::create_option_currency(
+            registry,
+            symbol,
+            name,
+            description,
+            OPTION_TOKEN_DECIMALS,
+            ctx,
+        );
+
+        // Create the pool
+        let mut pool = OptionsPool<BaseAsset, QuoteAsset> {
             id: object::new(ctx),
             option_type,
             strike_price,
             expiration_date,
             total_options_minted: 0,
+            treasury_cap,
+            token_info,
             collateral_balance_base: balance::zero(),
             collateral_balance_quote: balance::zero(),
             underlying_asset_price: option::none(),
@@ -208,6 +259,12 @@ module varuna::options_pool {
         };
 
         let pool_id = object::uid_to_inner(&pool.id);
+        let current_time = clock::timestamp_ms(clock);
+
+        // Update token info with pool ID
+        option_token_factory::set_pool_id(&mut pool.token_info, pool_id, current_time);
+
+        let (symbol_str, _, _, _, _) = option_token_factory::get_token_info(&pool.token_info);
 
         event::emit(PoolCreated {
             pool_id,
@@ -215,22 +272,24 @@ module varuna::options_pool {
             strike_price,
             expiration_date,
             deepbook_pool_id,
+            option_token_symbol: symbol_str,
         });
 
         transfer::share_object(pool);
         pool_id
     }
 
-    // ====== Minting Options ======
+    // ====== Minting Options (Increases Supply) ======
 
     /// Mint call options by depositing BaseAsset as collateral
-    /// The seller deposits the underlying asset they're willing to sell
+    /// This INCREASES the total supply of option tokens
+    /// Returns: (option_coins: Coin<OPTION_TOKEN>, owner_token: OwnerToken)
     public fun mint_call_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         collateral: Coin<BaseAsset>,
         clock: &Clock,
         ctx: &mut TxContext,
-    ): (OptionToken<BaseAsset, QuoteAsset>, OwnerToken<BaseAsset, QuoteAsset>) {
+    ): (Coin<OPTION_TOKEN>, OwnerToken<BaseAsset, QuoteAsset>) {
         // Verify this is a call option pool
         assert!(pool.option_type == OPTION_TYPE_CALL, EInvalidOptionType);
         
@@ -244,29 +303,16 @@ module varuna::options_pool {
         let collateral_balance = coin::into_balance(collateral);
         balance::join(&mut pool.collateral_balance_base, collateral_balance);
 
+        // Mint option tokens - THIS INCREASES THE SUPPLY
+        let option_coins = coin::mint(&mut pool.treasury_cap, amount, ctx);
+
         // Update minted count
         pool.total_options_minted = pool.total_options_minted + amount;
 
         let pool_id = object::uid_to_inner(&pool.id);
         let sender = tx_context::sender(ctx);
 
-        // Create option token
-        let mut option_token = OptionToken<BaseAsset, QuoteAsset> {
-            id: object::new(ctx),
-            amount,
-            pool_id,
-        };
-
-        // Add metadata as dynamic field
-        let metadata = OptionMetadata {
-            option_type: pool.option_type,
-            strike_price: pool.strike_price,
-            expiration_date: pool.expiration_date,
-            pool_id,
-        };
-        df::add(&mut option_token.id, b"metadata", metadata);
-
-        // Create owner token
+        // Create owner token (1:1 with options)
         let owner_token = OwnerToken<BaseAsset, QuoteAsset> {
             id: object::new(ctx),
             amount,
@@ -279,21 +325,25 @@ module varuna::options_pool {
             collateral_type: 0, // base
             collateral_amount: amount,
             minter: sender,
+            total_supply: pool.total_options_minted,
         });
 
-        (option_token, owner_token)
+        (option_coins, owner_token)
     }
 
     /// Mint put options by depositing QuoteAsset as collateral
-    /// The seller deposits quote currency (e.g., USDC) to buy the underlying if exercised
-    /// Collateral needed = strike_price * amount (in QuoteAsset terms)
+    /// This INCREASES the total supply of option tokens
+    /// 
+    /// Parameters:
+    /// - collateral: QuoteAsset coins to deposit
+    /// - amount: Number of put options to mint (in BaseAsset units)
     public fun mint_put_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         collateral: Coin<QuoteAsset>,
-        amount: u64, // Amount of put options to mint (in BaseAsset units)
+        amount: u64,
         clock: &Clock,
         ctx: &mut TxContext,
-    ): (OptionToken<BaseAsset, QuoteAsset>, OwnerToken<BaseAsset, QuoteAsset>) {
+    ): (Coin<OPTION_TOKEN>, OwnerToken<BaseAsset, QuoteAsset>) {
         // Verify this is a put option pool
         assert!(pool.option_type == OPTION_TYPE_PUT, EInvalidOptionType);
         
@@ -302,7 +352,7 @@ module varuna::options_pool {
         assert!(amount > 0, EZeroAmount);
 
         // Calculate required collateral: strike_price * amount / PRICE_DECIMALS
-        // Since strike_price is in QuoteAsset per BaseAsset with PRICE_DECIMALS precision
+        // For put options, collateral is in QuoteAsset
         let required_collateral = (pool.strike_price * amount) / PRICE_DECIMALS;
         let provided_collateral = coin::value(&collateral);
         
@@ -312,29 +362,16 @@ module varuna::options_pool {
         let collateral_balance = coin::into_balance(collateral);
         balance::join(&mut pool.collateral_balance_quote, collateral_balance);
 
+        // Mint option tokens - THIS INCREASES THE SUPPLY
+        let option_coins = coin::mint(&mut pool.treasury_cap, amount, ctx);
+
         // Update minted count (in BaseAsset units)
         pool.total_options_minted = pool.total_options_minted + amount;
 
         let pool_id = object::uid_to_inner(&pool.id);
         let sender = tx_context::sender(ctx);
 
-        // Create option token
-        let mut option_token = OptionToken<BaseAsset, QuoteAsset> {
-            id: object::new(ctx),
-            amount,
-            pool_id,
-        };
-
-        // Add metadata as dynamic field
-        let metadata = OptionMetadata {
-            option_type: pool.option_type,
-            strike_price: pool.strike_price,
-            expiration_date: pool.expiration_date,
-            pool_id,
-        };
-        df::add(&mut option_token.id, b"metadata", metadata);
-
-        // Create owner token
+        // Create owner token (1:1 with options)
         let owner_token = OwnerToken<BaseAsset, QuoteAsset> {
             id: object::new(ctx),
             amount,
@@ -347,15 +384,17 @@ module varuna::options_pool {
             collateral_type: 1, // quote
             collateral_amount: provided_collateral,
             minter: sender,
+            total_supply: pool.total_options_minted,
         });
 
-        (option_token, owner_token)
+        (option_coins, owner_token)
     }
 
     // ====== Price Update (Oracle) ======
 
     /// Update the underlying asset price from DeepBook
     /// Fetches the mid-price from the DeepBook pool
+    /// Anyone can call this to keep the price updated
     public fun update_price<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         deepbook_pool: &Pool<BaseAsset, QuoteAsset>,
@@ -372,17 +411,14 @@ module varuna::options_pool {
         );
 
         let mid_price = deepbook::pool::mid_price(deepbook_pool, clock);
-
-        let current_time = clock::timestamp_ms(clock);
-        
         // Update price
         pool.underlying_asset_price = option::some(mid_price);
-        pool.last_price_update = current_time;
+        pool.last_price_update = clock::timestamp_ms(clock);
 
         event::emit(PriceUpdated {
             pool_id: object::uid_to_inner(&pool.id),
             new_price: mid_price,
-            timestamp: current_time,
+            timestamp: clock::timestamp_ms(clock),
         });
     }
 
@@ -406,14 +442,18 @@ module varuna::options_pool {
         });
     }
 
-    // ====== Exercise Options (American Style) ======
+    // ====== Exercise Options (American Style - Decreases Supply) ======
 
-    /// Exercise call options before expiration (American style)
-    /// Buyer provides QuoteAsset payment, receives BaseAsset
+    /// Exercise call options before expiration
+    /// Burns option coins (DECREASES SUPPLY) and returns BaseAsset
+    /// 
+    /// Parameters:
+    /// - option_coins: OPTION_TOKEN coins to exercise
+    /// - payment: QuoteAsset payment at strike price
     public fun exercise_call_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
-        option_token: OptionToken<BaseAsset, QuoteAsset>,
-        payment: Coin<QuoteAsset>, // Payment at strike price
+        option_coins: Coin<OPTION_TOKEN>,
+        payment: Coin<QuoteAsset>,
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<BaseAsset> {
@@ -425,10 +465,7 @@ module varuna::options_pool {
         assert!(current_time < pool.expiration_date, EPoolExpired);
         assert!(!pool.is_settled, EPoolAlreadySettled);
 
-        // Verify option belongs to this pool
-        assert!(option_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
-
-        let amount = option_token.amount;
+        let amount = coin::value(&option_coins);
         assert!(amount > 0, EZeroAmount);
 
         // Check price is fresh
@@ -454,14 +491,15 @@ module varuna::options_pool {
         // Update exercised count
         pool.total_options_exercised = pool.total_options_exercised + amount;
 
-        // Burn option token
-        let OptionToken { id, amount: _, pool_id: _ } = option_token;
-        object::delete(id);
+        // Burn option tokens - THIS DECREASES THE SUPPLY
+        coin::burn(&mut pool.treasury_cap, option_coins);
 
         // Transfer BaseAsset to exerciser
         assert!(balance::value(&pool.collateral_balance_base) >= amount, EInsufficientCollateral);
         let payout_balance = balance::split(&mut pool.collateral_balance_base, amount);
         let payout_coin = coin::from_balance(payout_balance, ctx);
+
+        let total_supply = coin::total_supply(&pool.treasury_cap);
 
         event::emit(OptionsExercised {
             pool_id: object::uid_to_inner(&pool.id),
@@ -469,17 +507,22 @@ module varuna::options_pool {
             exerciser: tx_context::sender(ctx),
             payout_base: amount,
             payout_quote: 0,
+            total_supply,
         });
 
         payout_coin
     }
 
-    /// Exercise put options before expiration (American style)
-    /// Buyer provides BaseAsset, receives QuoteAsset at strike price
+    /// Exercise put options before expiration
+    /// Burns option coins (DECREASES SUPPLY) and returns QuoteAsset
+    /// 
+    /// Parameters:
+    /// - option_coins: OPTION_TOKEN coins to exercise
+    /// - base_asset: BaseAsset to sell at strike price
     public fun exercise_put_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
-        option_token: OptionToken<BaseAsset, QuoteAsset>,
-        base_asset: Coin<BaseAsset>, // BaseAsset to sell
+        option_coins: Coin<OPTION_TOKEN>,
+        base_asset: Coin<BaseAsset>,
         clock: &Clock,
         ctx: &mut TxContext,
     ): Coin<QuoteAsset> {
@@ -491,10 +534,7 @@ module varuna::options_pool {
         assert!(current_time < pool.expiration_date, EPoolExpired);
         assert!(!pool.is_settled, EPoolAlreadySettled);
 
-        // Verify option belongs to this pool
-        assert!(option_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
-
-        let amount = option_token.amount;
+        let amount = coin::value(&option_coins);
         assert!(amount > 0, EZeroAmount);
 
         // Check price is fresh
@@ -512,7 +552,7 @@ module varuna::options_pool {
         // Verify sufficient BaseAsset provided
         assert!(coin::value(&base_asset) >= amount, EInsufficientCollateral);
 
-        // Deposit BaseAsset into pool
+        // Deposit BaseAsset
         let base_balance = coin::into_balance(base_asset);
         balance::join(&mut pool.collateral_balance_base, base_balance);
 
@@ -522,14 +562,15 @@ module varuna::options_pool {
         // Update exercised count
         pool.total_options_exercised = pool.total_options_exercised + amount;
 
-        // Burn option token
-        let OptionToken { id, amount: _, pool_id: _ } = option_token;
-        object::delete(id);
+        // Burn option tokens - THIS DECREASES THE SUPPLY
+        coin::burn(&mut pool.treasury_cap, option_coins);
 
-        // Transfer QuoteAsset to exerciser
+        // Transfer QuoteAsset
         assert!(balance::value(&pool.collateral_balance_quote) >= payout, EInsufficientCollateral);
         let payout_balance = balance::split(&mut pool.collateral_balance_quote, payout);
         let payout_coin = coin::from_balance(payout_balance, ctx);
+
+        let total_supply = coin::total_supply(&pool.treasury_cap);
 
         event::emit(OptionsExercised {
             pool_id: object::uid_to_inner(&pool.id),
@@ -537,6 +578,7 @@ module varuna::options_pool {
             exerciser: tx_context::sender(ctx),
             payout_base: 0,
             payout_quote: payout,
+            total_supply,
         });
 
         payout_coin
@@ -546,6 +588,7 @@ module varuna::options_pool {
 
     /// Settle the pool after expiration
     /// Fetches final price from DeepBook and locks in settlement
+    /// Anyone can call this after expiration
     public fun settle_pool<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         deepbook_pool: &Pool<BaseAsset, QuoteAsset>,
@@ -563,11 +606,13 @@ module varuna::options_pool {
             EInvalidPoolReference
         );
 
+        let settlement_price = *option::borrow(&pool.underlying_asset_price);
+        pool.underlying_asset_price = option::some(settlement_price);
         pool.is_settled = true;
 
         event::emit(PoolSettled {
             pool_id: object::uid_to_inner(&pool.id),
-            settlement_price: *option::borrow(&pool.underlying_asset_price),
+            settlement_price,
             timestamp: current_time,
         });
     }
@@ -575,25 +620,21 @@ module varuna::options_pool {
     // ====== Claim After Settlement ======
 
     /// Claim collateral with owner tokens after settlement (for call options)
-    /// Call writers receive:
-    /// - BaseAsset if out of the money (price <= strike)
-    /// - QuoteAsset if in the money (price > strike) from exercises
+    /// Call option writers receive:
+    /// - BaseAsset if out of the money (settlement_price <= strike)
+    /// - QuoteAsset if in the money (settlement_price > strike) from exercises
     public fun claim_collateral_call<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         owner_token: OwnerToken<BaseAsset, QuoteAsset>,
         ctx: &mut TxContext,
     ): (Coin<BaseAsset>, Coin<QuoteAsset>) {
-        // Check settled
         assert!(pool.is_settled, EPoolNotExpired);
         assert!(pool.option_type == OPTION_TYPE_CALL, EInvalidOptionType);
-
-        // Verify owner token belongs to this pool
         assert!(owner_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
 
         let amount = owner_token.amount;
         let settlement_price = *option::borrow(&pool.settlement_price);
 
-        // Calculate claimable amounts
         let (claimable_base, claimable_quote) = if (settlement_price <= pool.strike_price) {
             // Out of the money - writer keeps BaseAsset
             (amount, 0u64)
@@ -635,25 +676,21 @@ module varuna::options_pool {
     }
 
     /// Claim collateral with owner tokens after settlement (for put options)
-    /// Put writers receive:
-    /// - QuoteAsset if out of the money (price >= strike)
-    /// - BaseAsset if in the money (price < strike) from exercises
+    /// Put option writers receive:
+    /// - QuoteAsset if out of the money (settlement_price >= strike)
+    /// - BaseAsset if in the money (settlement_price < strike) from exercises
     public fun claim_collateral_put<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
         owner_token: OwnerToken<BaseAsset, QuoteAsset>,
         ctx: &mut TxContext,
     ): (Coin<BaseAsset>, Coin<QuoteAsset>) {
-        // Check settled
         assert!(pool.is_settled, EPoolNotExpired);
         assert!(pool.option_type == OPTION_TYPE_PUT, EInvalidOptionType);
-
-        // Verify owner token belongs to this pool
         assert!(owner_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
 
         let amount = owner_token.amount;
         let settlement_price = *option::borrow(&pool.settlement_price);
 
-        // Calculate claimable amounts
         let (claimable_base, claimable_quote) = if (settlement_price >= pool.strike_price) {
             // Out of the money - writer keeps QuoteAsset
             let quote_per_option = pool.strike_price / PRICE_DECIMALS;
@@ -693,22 +730,18 @@ module varuna::options_pool {
         (base_coin, quote_coin)
     }
 
-    /// Claim with call option tokens after settlement (if in the money)
-    /// Option holders can claim by paying strike price
+    /// Claim with call option coins after settlement (if in the money)
+    /// Burns option coins (DECREASES SUPPLY) and returns BaseAsset
     public fun claim_with_call_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
-        option_token: OptionToken<BaseAsset, QuoteAsset>,
-        payment: Coin<QuoteAsset>, // Payment at strike price
+        option_coins: Coin<OPTION_TOKEN>,
+        payment: Coin<QuoteAsset>,
         ctx: &mut TxContext,
     ): Coin<BaseAsset> {
-        // Check settled
         assert!(pool.is_settled, EPoolNotExpired);
         assert!(pool.option_type == OPTION_TYPE_CALL, EInvalidOptionType);
 
-        // Verify option belongs to this pool
-        assert!(option_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
-
-        let amount = option_token.amount;
+        let amount = coin::value(&option_coins);
         let settlement_price = *option::borrow(&pool.settlement_price);
 
         // Can only claim if in the money
@@ -722,14 +755,15 @@ module varuna::options_pool {
         let payment_balance = coin::into_balance(payment);
         balance::join(&mut pool.collateral_balance_quote, payment_balance);
 
-        // Burn option token
-        let OptionToken { id, amount: _, pool_id: _ } = option_token;
-        object::delete(id);
+        // Burn option tokens - DECREASES SUPPLY
+        coin::burn(&mut pool.treasury_cap, option_coins);
 
         // Transfer BaseAsset
         assert!(balance::value(&pool.collateral_balance_base) >= amount, EInsufficientCollateral);
         let payout_balance = balance::split(&mut pool.collateral_balance_base, amount);
         let payout_coin = coin::from_balance(payout_balance, ctx);
+
+        let total_supply = coin::total_supply(&pool.treasury_cap);
 
         event::emit(OptionsExercised {
             pool_id: object::uid_to_inner(&pool.id),
@@ -737,27 +771,24 @@ module varuna::options_pool {
             exerciser: tx_context::sender(ctx),
             payout_base: amount,
             payout_quote: 0,
+            total_supply,
         });
 
         payout_coin
     }
 
-    /// Claim with put option tokens after settlement (if in the money)
-    /// Option holders provide BaseAsset and receive QuoteAsset at strike price
+    /// Claim with put option coins after settlement (if in the money)
+    /// Burns option coins (DECREASES SUPPLY) and returns QuoteAsset
     public fun claim_with_put_options<BaseAsset, QuoteAsset>(
         pool: &mut OptionsPool<BaseAsset, QuoteAsset>,
-        option_token: OptionToken<BaseAsset, QuoteAsset>,
+        option_coins: Coin<OPTION_TOKEN>,
         base_asset: Coin<BaseAsset>,
         ctx: &mut TxContext,
     ): Coin<QuoteAsset> {
-        // Check settled
         assert!(pool.is_settled, EPoolNotExpired);
         assert!(pool.option_type == OPTION_TYPE_PUT, EInvalidOptionType);
 
-        // Verify option belongs to this pool
-        assert!(option_token.pool_id == object::uid_to_inner(&pool.id), EInvalidPoolReference);
-
-        let amount = option_token.amount;
+        let amount = coin::value(&option_coins);
         let settlement_price = *option::borrow(&pool.settlement_price);
 
         // Can only claim if in the money
@@ -773,14 +804,15 @@ module varuna::options_pool {
         // Calculate payout
         let payout = (pool.strike_price * amount) / PRICE_DECIMALS;
 
-        // Burn option token
-        let OptionToken { id, amount: _, pool_id: _ } = option_token;
-        object::delete(id);
+        // Burn option tokens - DECREASES SUPPLY
+        coin::burn(&mut pool.treasury_cap, option_coins);
 
         // Transfer QuoteAsset
         assert!(balance::value(&pool.collateral_balance_quote) >= payout, EInsufficientCollateral);
         let payout_balance = balance::split(&mut pool.collateral_balance_quote, payout);
         let payout_coin = coin::from_balance(payout_balance, ctx);
+
+        let total_supply = coin::total_supply(&pool.treasury_cap);
 
         event::emit(OptionsExercised {
             pool_id: object::uid_to_inner(&pool.id),
@@ -788,6 +820,7 @@ module varuna::options_pool {
             exerciser: tx_context::sender(ctx),
             payout_base: 0,
             payout_quote: payout,
+            total_supply,
         });
 
         payout_coin
@@ -795,14 +828,16 @@ module varuna::options_pool {
 
     // ====== View Functions ======
 
+    /// Get comprehensive pool information
     public fun get_pool_info<BaseAsset, QuoteAsset>(
         pool: &OptionsPool<BaseAsset, QuoteAsset>,
-    ): (u8, u64, u64, u64, u64, u64, bool, Option<u64>) {
+    ): (u8, u64, u64, u64, u64, u64, u64, bool, Option<u64>) {
         (
             pool.option_type,
             pool.strike_price,
             pool.expiration_date,
             pool.total_options_minted,
+            coin::total_supply(&pool.treasury_cap),
             balance::value(&pool.collateral_balance_base),
             balance::value(&pool.collateral_balance_quote),
             pool.is_settled,
@@ -810,42 +845,44 @@ module varuna::options_pool {
         )
     }
 
+    /// Get current price and last update time
     public fun get_current_price<BaseAsset, QuoteAsset>(
         pool: &OptionsPool<BaseAsset, QuoteAsset>,
     ): (Option<u64>, u64) {
         (pool.underlying_asset_price, pool.last_price_update)
     }
 
-    public fun get_option_token_amount<BaseAsset, QuoteAsset>(
-        token: &OptionToken<BaseAsset, QuoteAsset>,
+    /// Get option token supply
+    public fun get_option_supply<BaseAsset, QuoteAsset>(
+        pool: &OptionsPool<BaseAsset, QuoteAsset>,
     ): u64 {
-        token.amount
+        coin::total_supply(&pool.treasury_cap)
     }
 
+    /// Get owner token amount
     public fun get_owner_token_amount<BaseAsset, QuoteAsset>(
         token: &OwnerToken<BaseAsset, QuoteAsset>,
     ): u64 {
         token.amount
     }
 
+    /// Get DeepBook pool ID
     public fun get_deepbook_pool_id<BaseAsset, QuoteAsset>(
         pool: &OptionsPool<BaseAsset, QuoteAsset>,
     ): ID {
         pool.deepbook_pool_id
     }
 
-    // ====== Token Merging/Splitting ======
-
-    public fun merge_option_tokens<BaseAsset, QuoteAsset>(
-        token1: &mut OptionToken<BaseAsset, QuoteAsset>,
-        token2: OptionToken<BaseAsset, QuoteAsset>,
-    ) {
-        assert!(token1.pool_id == token2.pool_id, EInvalidPoolReference);
-        let OptionToken { id, amount, pool_id: _ } = token2;
-        token1.amount = token1.amount + amount;
-        object::delete(id);
+    /// Get option token metadata
+    public fun get_token_metadata<BaseAsset, QuoteAsset>(
+        pool: &OptionsPool<BaseAsset, QuoteAsset>,
+    ): (String, String, String, u8, Option<ID>) {
+        option_token_factory::get_token_info(&pool.token_info)
     }
 
+    // ====== Owner Token Operations ======
+
+    /// Merge two owner tokens from the same pool
     public fun merge_owner_tokens<BaseAsset, QuoteAsset>(
         token1: &mut OwnerToken<BaseAsset, QuoteAsset>,
         token2: OwnerToken<BaseAsset, QuoteAsset>,
@@ -856,21 +893,7 @@ module varuna::options_pool {
         object::delete(id);
     }
 
-    public fun split_option_token<BaseAsset, QuoteAsset>(
-        token: &mut OptionToken<BaseAsset, QuoteAsset>,
-        split_amount: u64,
-        ctx: &mut TxContext,
-    ): OptionToken<BaseAsset, QuoteAsset> {
-        assert!(token.amount >= split_amount, EInsufficientCollateral);
-        token.amount = token.amount - split_amount;
-
-        OptionToken<BaseAsset, QuoteAsset> {
-            id: object::new(ctx),
-            amount: split_amount,
-            pool_id: token.pool_id,
-        }
-    }
-
+    /// Split an owner token into two
     public fun split_owner_token<BaseAsset, QuoteAsset>(
         token: &mut OwnerToken<BaseAsset, QuoteAsset>,
         split_amount: u64,
