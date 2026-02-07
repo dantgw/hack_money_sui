@@ -66,7 +66,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
     return (
         <div
             ref={dropdownRef}
-            className="absolute top-full left-0 mt-1 z-50 w-[700px] bg-[#15171c] border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[60vh]"
+            className="absolute top-full left-0 mt-1 z-50 w-[calc(100vw-16px)] max-w-[700px] sm:w-[700px] bg-[#15171c] border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[70vh] sm:max-h-[60vh]"
         >
             {/* Search Header */}
             <div className="p-4 border-b border-white/5 space-y-4">
@@ -84,12 +84,12 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-1 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
+                <div className="flex flex-wrap items-center gap-1 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
                     {['All', 'Spot', 'Crypto', 'Trending'].map(cat => (
                         <button
                             key={cat}
                             onClick={() => setCategory(cat)}
-                            className={`px-3 py-1.5 rounded-md transition-colors ${category === cat ? 'bg-primary/10 text-primary' : 'hover:text-foreground'}`}
+                            className={`px-3 py-2 sm:py-1.5 rounded-md transition-colors min-h-[44px] sm:min-h-0 touch-manipulation ${category === cat ? 'bg-primary/10 text-primary' : 'hover:text-foreground active:bg-white/5'}`}
                         >
                             {cat}
                         </button>
@@ -122,7 +122,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                                         onSelect(pool.poolName);
                                         onClose();
                                     }}
-                                    className={`group cursor-pointer transition-colors ${isSelected ? 'bg-primary/5' : 'hover:bg-white/5'}`}
+                                    className={`group cursor-pointer transition-colors touch-manipulation min-h-[48px] ${isSelected ? 'bg-primary/5' : 'hover:bg-white/5 active:bg-white/10'}`}
                                 >
                                     <td className="pl-4 py-3">
                                         <Star className={`w-3.5 h-3.5 transition-colors ${isSelected ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground group-hover:text-white/40'}`} />

@@ -524,11 +524,10 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
     };
 
     return (
-        <div className="flex flex-col h-full justify-between bg-background border-l overflow-y-auto">
-
+        <div className="flex flex-col h-full justify-between bg-background overflow-y-auto">
 
             {/* Trading Section */}
-            <div className="p-4 space-y-4">
+            <div className="p-4 sm:p-4 space-y-4">
                 {/* Order type tabs */}
                 <div className="flex w-full text-xs border-b border-muted">
                     <button
@@ -553,14 +552,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                 <div className="flex rounded-md bg-muted p-1">
                     <button
                         onClick={() => setSide('buy')}
-                        className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-all ${side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80'
+                        className={`flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation ${side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted'
                             }`}
                     >
                         Buy
                     </button>
                     <button
                         onClick={() => setSide('sell')}
-                        className={`flex-1 py-1.5 text-sm font-medium rounded-sm transition-all ${side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80'
+                        className={`flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation ${side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted'
                             }`}
                     >
                         Sell
@@ -626,7 +625,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
                         <Button
                             onClick={handlePlaceOrder}
                             disabled={isPlacingOrder || !poolInfo || !balanceManager || !size || (orderType === 'limit' && !price)}
-                            className={`w-full font-bold uppercase ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            className={`w-full font-bold uppercase min-h-[44px] touch-manipulation py-3 sm:py-2 ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                         >
                             {isPlacingOrder ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -692,8 +691,8 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
 
             {/* Deposit Modal */}
             {isDepositModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
                                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
@@ -766,8 +765,8 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
 
             {/* Withdraw Modal */}
             {isWithdrawModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
                                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">

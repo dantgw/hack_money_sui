@@ -145,15 +145,15 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background border-t">
-            <div className="flex border-b">
+        <div className="flex flex-col h-full bg-background">
+            <div className="flex border-b shrink-0">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.id
+                        className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-2 text-xs font-medium transition-colors border-b-2 -mb-px min-h-[44px] touch-manipulation ${activeTab === tab.id
                             ? 'border-primary text-primary'
-                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                            : 'border-transparent text-muted-foreground hover:text-foreground active:bg-muted/50'
                             }`}
                     >
                         {tab.label}
@@ -161,7 +161,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                 ))}
             </div>
 
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-3 sm:p-4">
                 {activeTab === 'orders' && (
                     <div className="w-full">
                         {isLoadingOrders ? (
@@ -174,18 +174,18 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                 <p className="text-xs italic">Place an order to see it here</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto -mx-3 sm:mx-0">
+                                <table className="w-full text-left text-[11px] sm:text-xs min-w-[640px]">
                                     <thead className="text-muted-foreground border-b uppercase tracking-tight">
                                         <tr>
-                                            <th className="pb-2">Time</th>
-                                            <th className="pb-2">Type</th>
-                                            <th className="pb-2">Coin</th>
-                                            <th className="pb-2">Direction</th>
-                                            <th className="pb-2 text-right">Remaining Qty</th>
-                                            <th className="pb-2 text-right">Original Qty</th>
-                                            <th className="pb-2 text-right">Order Value</th>
-                                            <th className="pb-2 text-right">Price</th>
+                                            <th className="pb-2 pr-2">Time</th>
+                                            <th className="pb-2 pr-2">Type</th>
+                                            <th className="pb-2 pr-2">Coin</th>
+                                            <th className="pb-2 pr-2">Direction</th>
+                                            <th className="pb-2 pr-2 text-right">Remaining Qty</th>
+                                            <th className="pb-2 pr-2 text-right">Original Qty</th>
+                                            <th className="pb-2 pr-2 text-right">Order Value</th>
+                                            <th className="pb-2 pr-2 text-right">Price</th>
                                             <th className="pb-2 text-right">Action</th>
                                         </tr>
                                     </thead>
@@ -249,15 +249,15 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                 <p className="text-xs italic">Your past orders will appear here</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto -mx-3 sm:mx-0">
+                                <table className="w-full text-left text-[11px] sm:text-xs min-w-[480px]">
                                     <thead className="text-muted-foreground border-b uppercase tracking-tight">
                                         <tr>
-                                            <th className="pb-2">Time</th>
-                                            <th className="pb-2">Coin</th>
-                                            <th className="pb-2">Side</th>
-                                            <th className="pb-2 text-right">Filled / Total</th>
-                                            <th className="pb-2 text-right">Price</th>
+                                            <th className="pb-2 pr-2">Time</th>
+                                            <th className="pb-2 pr-2">Coin</th>
+                                            <th className="pb-2 pr-2">Side</th>
+                                            <th className="pb-2 pr-2 text-right">Filled / Total</th>
+                                            <th className="pb-2 pr-2 text-right">Price</th>
                                             <th className="pb-2 text-right">Status</th>
                                         </tr>
                                     </thead>

@@ -1,12 +1,14 @@
 import { ConnectButton, useCurrentNetwork, useDAppKit } from "@mysten/dapp-kit-react";
-import { TrendingUp } from "lucide-react";
 import { DeepBookTrading } from "./components/DeepBookTrading";
 import { Button } from "./components/ui/button";
 import { Toaster } from "sonner";
 import { NETWORK_STORAGE_KEY } from "./dApp-kit";
 
-import { Link, Route, Routes } from "react-router-dom";
+import { NavLink, Route, Routes } from "react-router-dom";
 import { OptionsPage } from "./components/OptionsPage";
+import { AccountPage } from "./components/AccountPage";
+import { TrendingUp, FileText, User } from "lucide-react";
+import { cn } from "./lib/utils";
 
 function App() {
   const currentNetwork = useCurrentNetwork();
@@ -18,52 +20,103 @@ function App() {
     dAppKit.switchNetwork(newNetwork);
   };
 
-  return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="w-full flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">Varuna</h1>
-            <nav className="flex gap-2">
-              <Link to="/">
-                <TrendingUp className="inline h-4 w-4 mr-1" />
-                DeepBook
-              </Link>
-              <Link to="/options">Options</Link>
-            </nav>
-          </div>
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+      isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+    );
 
-          <div className="flex items-center gap-3">
+  const bottomTabClass = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "flex flex-col items-center justify-center flex-1 py-2.5 min-h-[56px] gap-1 transition-colors touch-manipulation",
+      isActive ? "text-primary" : "text-muted-foreground active:text-foreground"
+    );
+
+  return (
+    <div className="min-h-dvh min-h-screen flex flex-col bg-background">
+      {/* Header — minimal on mobile, full nav on desktop */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
+        <div className="w-full flex h-12 sm:h-14 items-center justify-between px-3 sm:px-4 gap-2">
+          {/* Left: Brand — always visible */}
+          <h1 className="text-base sm:text-lg font-semibold shrink-0">Varuna</h1>
+
+          {/* Center: Desktop nav (hidden on mobile — bottom tabs instead) */}
+          <nav className="hidden lg:flex items-center gap-1">
+            <NavLink to="/" className={navLinkClass}>
+              <TrendingUp className="h-4 w-4" />
+              DeepBook
+            </NavLink>
+            <NavLink to="/options" className={navLinkClass}>
+              <FileText className="h-4 w-4" />
+              Options
+            </NavLink>
+          </nav>
+
+          {/* Right: Wallet & network — compact on mobile */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             <Button
               variant="outline"
               size="sm"
               onClick={toggleNetwork}
-              className="font-medium"
+              className="font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 hidden sm:inline-flex"
             >
               {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
             </Button>
-            <ConnectButton />
+            <div className="hidden lg:block [&_button]:h-8 [&_button]:text-xs sm:[&_button]:h-9 sm:[&_button]:text-sm">
+              <ConnectButton />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="h-screen">
-        <Routes>
-          <Route path="/" element={<DeepBookTrading />} />
-          <Route path="/options" element={<OptionsPage />} />
-        </Routes>
+      {/* Main content — room for bottom tab bar on mobile */}
+      <main className="flex-1 min-h-0 overflow-hidden pb-[72px] lg:pb-0 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <Routes>
+            <Route path="/" element={<DeepBookTrading />} />
+            <Route path="/options" element={<OptionsPage />} />
+            <Route path="/account" element={<AccountPage />} />
+          </Routes>
+        </div>
       </main>
+
+      {/* Bottom tab bar — mobile only (Robinhood/Coinbase style) */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
+        aria-label="Main navigation"
+      >
+        <div className="flex items-stretch h-14">
+          <NavLink to="/" className={bottomTabClass}>
+            {({ isActive }) => (
+              <>
+                <TrendingUp className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className="text-[11px] font-medium">Trade</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/options" className={bottomTabClass}>
+            {({ isActive }) => (
+              <>
+                <FileText className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className="text-[11px] font-medium">Options</span>
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/account" className={bottomTabClass}>
+            {({ isActive }) => (
+              <>
+                <User className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className="text-[11px] font-medium">Account</span>
+              </>
+            )}
+          </NavLink>
+        </div>
+      </nav>
+
       <Toaster
         position="bottom-right"
         richColors
         closeButton
-        toastOptions={{
-          style: {
-            background: "hsl(var(--background))",
-            border: "1px solid hsl(var(--border))",
-            color: "hsl(var(--foreground))",
-          },
-        }}
       />
     </div>
   );

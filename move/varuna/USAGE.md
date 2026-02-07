@@ -105,6 +105,7 @@ sui client call --package <PACKAGE_ID> \
   --gas-budget 100000000
 ```
 
+## CALL OPTIONS PACKAGE
 ```
 sui client call --package 0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41695ca146aae8 --module call_deep_sui_30000000_exp20270101 --function create_pool --args 0x67fea1cea4376dc9f85ce635c6da7f161f005a997918388d7cc6eb2567d2d5b0 0x48c95963e9eac37a316b7ae04a0deb761bcdcc2b67912374d6036e7f0e9bae9f 0x6 --type-args 0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP 0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI
 ```
@@ -112,6 +113,16 @@ sui client call --package 0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41
 object id
 0x77a55a7f355f449db59fa7de7f957c79c211a0a893f7ba01115cf2e9c00db58e
 ```
+
+## PUT OPTIONS PACKAGE
+```
+sui client call --package 0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427 --module put_deep_sui_30000000_exp20270101 --function create_pool --args 0x031a57af76aa794531681deaa095fd0bab54891e29297fd1618e7f3e09ac5666 0x48c95963e9eac37a316b7ae04a0deb761bcdcc2b67912374d6036e7f0e9bae9f 0x6 --type-args 0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP 0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI
+```
+```
+object id
+0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c
+```
+
 ## Using the Options Pool
 
 ### Minting Call Options (Sellers)

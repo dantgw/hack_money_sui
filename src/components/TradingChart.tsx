@@ -195,7 +195,7 @@ export function TradingChart({
     data,
     interval = '1h',
     onIntervalChange,
-    onLoadMore,
+    onLoadMore: _onLoadMore,
     tickSize,
     quoteAssetDecimals
 }: TradingChartProps) {
@@ -209,7 +209,8 @@ export function TradingChart({
     const oldestTimestampRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (!chartContainerRef.current) return;
+        const container = chartContainerRef.current;
+        if (!container) return;
 
         // Calculate decimal places from tickSize and asset decimals
         const decimalPlaces = getDecimalPlaces(tickSize, quoteAssetDecimals);
@@ -219,67 +220,92 @@ export function TradingChart({
             return formatPrice(price, decimalPlaces);
         };
 
-        // Create chart with initial size
-        const chart = createChart(chartContainerRef.current, {
-            layout: {
-                background: { type: ColorType.Solid, color: '#0c0d10' },
-                textColor: '#d1d4dc',
-            },
-            grid: {
-                vertLines: { color: '#1a1a1a' },
-                horzLines: { color: '#1a1a1a' },
-            },
-            crosshair: {
-                mode: 1,
-            },
-            rightPriceScale: {
-                borderColor: '#2a2a2a',
-                scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1,
+        let rafId: number | undefined;
+        let resizeObserver: ResizeObserver | null = null;
+
+        const initChart = () => {
+            const rect = container.getBoundingClientRect();
+            const width = Math.max(rect.width || 300, 100);
+            const height = Math.max(rect.height || 200, 100);
+
+            const chart = createChart(container, {
+                width,
+                height,
+                autoSize: true, // Handles mobile resize; uses ResizeObserver internally
+                layout: {
+                    background: { type: ColorType.Solid, color: '#0c0d10' },
+                    textColor: '#d1d4dc',
                 },
-            },
-            timeScale: {
-                borderColor: '#2a2a2a',
-                timeVisible: true,
-                secondsVisible: false,
-                rightOffset: 10,
-                fixLeftEdge: false,
-                fixRightEdge: false,
-            },
-            localization: {
-                ...getLocalization(interval),
-                priceFormatter,
-            },
-        });
+                grid: {
+                    vertLines: { color: '#1a1a1a' },
+                    horzLines: { color: '#1a1a1a' },
+                },
+                crosshair: {
+                    mode: 1,
+                },
+                rightPriceScale: {
+                    borderColor: '#2a2a2a',
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.1,
+                    },
+                },
+                timeScale: {
+                    borderColor: '#2a2a2a',
+                    timeVisible: true,
+                    secondsVisible: false,
+                    rightOffset: 10,
+                    fixLeftEdge: false,
+                    fixRightEdge: false,
+                },
+                localization: {
+                    ...getLocalization(interval),
+                    priceFormatter,
+                },
+            });
 
-        chartRef.current = chart;
+            chartRef.current = chart;
 
-        // Add candlestick series
-        const candlestickSeries = chart.addSeries(CandlestickSeries, {
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
+            // Add candlestick series
+            const candlestickSeries = chart.addSeries(CandlestickSeries, {
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
 
-        seriesRef.current = candlestickSeries;
+            seriesRef.current = candlestickSeries;
+        };
 
-        // Use ResizeObserver for reliable responsive sizing
-        const resizeObserver = new ResizeObserver(entries => {
-            if (entries.length === 0 || !entries[0].contentRect) return;
-            const { width, height } = entries[0].contentRect;
-            chart.applyOptions({ width, height });
-            chart.timeScale().fitContent();
-        });
+        const tryInit = () => {
+            const rect = container.getBoundingClientRect();
+            if (rect.width >= 50 && rect.height >= 50) {
+                initChart();
+                return true;
+            }
+            return false;
+        };
 
-        resizeObserver.observe(chartContainerRef.current);
+        // On mobile, container often has 0 size before layout — wait for dimensions
+        if (!tryInit()) {
+            resizeObserver = new ResizeObserver(() => {
+                if (tryInit() && resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+            });
+            resizeObserver.observe(container);
+            rafId = requestAnimationFrame(() => {
+                if (!chartRef.current) tryInit();
+            });
+        }
 
         return () => {
-            resizeObserver.disconnect();
+            if (resizeObserver) resizeObserver.disconnect();
+            if (rafId !== undefined) cancelAnimationFrame(rafId);
             if (chartRef.current) {
                 chartRef.current.remove();
+                chartRef.current = null;
             }
         };
     }, []);
@@ -586,8 +612,8 @@ export function TradingChart({
                 </div>
             </div>
 
-            {/* Chart Container */}
-            <div ref={chartContainerRef} className="flex-1 w-full h-full" />
+            {/* Chart Container — min-h ensures layout on mobile before Lightweight Charts measures */}
+            <div ref={chartContainerRef} className="flex-1 w-full min-h-[120px] sm:min-h-[150px]" />
         </div>
     );
 }

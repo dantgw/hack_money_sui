@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 import { ConnectButton } from "@mysten/dapp-kit-react";
 import { Loader2, Calendar, DollarSign } from "lucide-react";
 import { toast } from "sonner";
-import { VARUNA_OPTIONS_PACKAGE_ID } from "../constants";
+import { VARUNA_CALL_OPTIONS_PACKAGE_ID, VARUNA_PUT_OPTIONS_PACKAGE_ID } from "../constants";
 
 interface OptionPool {
     id: string;
@@ -33,8 +33,19 @@ const EXAMPLE_OPTIONS: OptionPool[] = [
         baseAsset: "DEEP",
         quoteAsset: "SUI",
         // optionTokenType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
-
         optionTokenType: "0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41695ca146aae8::call_deep_sui_30000000_exp20270101::CALL_DEEP_SUI_30000000_EXP20270101",
+        baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+        quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
+    },
+    {
+        id: "0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c",
+        name: "PUT DEEP/SUI Strike 0.03",
+        type: "PUT",
+        strikePrice: 0.03,
+        expirationDate: 1798761600000, // Jan 1, 2027
+        baseAsset: "DEEP",
+        quoteAsset: "SUI",
+        optionTokenType: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427::put_deep_sui_30000000_exp20270101::PUT_DEEP_SUI_30000000_EXP20270101",
         baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
         quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
     },
@@ -53,7 +64,7 @@ export function OptionsPage() {
             toast.error("Please connect your wallet");
             return;
         }
-
+        console.log("Minting options for", option);
         const poolIdToUse = poolId || option.id;
         if (!poolIdToUse) {
             toast.error("Pool ID is required", {
@@ -70,7 +81,7 @@ export function OptionsPage() {
         }
 
         const network = currentNetwork as "mainnet" | "testnet" | "devnet";
-        const packageId = VARUNA_OPTIONS_PACKAGE_ID[network];
+        const packageId = option.type === "CALL" ? VARUNA_CALL_OPTIONS_PACKAGE_ID[network] : VARUNA_PUT_OPTIONS_PACKAGE_ID[network];
 
         if (!packageId) {
             toast.error("Package not deployed", {
@@ -93,12 +104,13 @@ export function OptionsPage() {
             const jsonRpcClient = new SuiJsonRpcClient({ network, url: rpcUrl });
             const coins = await jsonRpcClient.getCoins({
                 owner: currentAccount.address,
-                coinType: option.baseAssetType,
+                coinType: option.type === "CALL" ? option.baseAssetType : option.quoteAssetType,
             });
 
             if (coins.data.length === 0) {
+                const requiredAsset = option.type === "CALL" ? option.baseAsset : option.quoteAsset;
                 toast.error("Insufficient balance", {
-                    description: `You don't have any ${option.baseAsset} coins. Please acquire some first.`,
+                    description: `You don't have any ${requiredAsset} coins. Please acquire some first.`,
                 });
                 setMintingPool(null);
                 return;
@@ -110,40 +122,90 @@ export function OptionsPage() {
             // Get all coin object IDs
             const coinObjectIds = coins.data.map((coin) => coin.coinObjectId);
 
-            // Merge coins if there are multiple
-            if (coinObjectIds.length > 1) {
-                tx.mergeCoins(
-                    tx.object(coinObjectIds[0]),
-                    coinObjectIds.slice(1).map((id) => tx.object(id))
-                );
-            }
-
             // Convert collateral amount to base units
             const amountInBaseUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 6)));
+            const amountInQuoteUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 9)));
 
-            // Split coins for collateral from the merged coin
-            const [collateralCoin] = tx.splitCoins(tx.object(coinObjectIds[0]), [amountInBaseUnits]);
+            // For PUT options: calculate amount of options to mint based on collateral
+            // required_collateral = (strike_price * amount) / PRICE_DECIMALS
+            // So: amount = (collateral * PRICE_DECIMALS) / strike_price
+            // PRICE_DECIMALS = 1_000_000_000 (9 decimals)
+            const PRICE_DECIMALS = option.type === "CALL" ? BigInt(1_000_000_000) : BigInt(1_000_000);
+            const strikePriceInBaseUnits = BigInt(Math.floor(option.strikePrice * Number(PRICE_DECIMALS)));
 
+            let amountToMint: bigint;
+            let collateralCoin;
+
+            if (option.type === "CALL") {
+                // For CALL: collateral is BaseAsset (not SUI), merge coins if needed
+                if (coinObjectIds.length > 1) {
+                    tx.mergeCoins(
+                        tx.object(coinObjectIds[0]),
+                        coinObjectIds.slice(1).map((id) => tx.object(id))
+                    );
+                }
+                // For CALL: collateral is BaseAsset, amount is the collateral amount
+                amountToMint = amountInBaseUnits;
+                const [splitCoin] = tx.splitCoins(tx.object(coinObjectIds[0]), [amountInBaseUnits]);
+                collateralCoin = splitCoin;
+            } else {
+                // For PUT: collateral is QuoteAsset (SUI), use tx.gas to split
+                // This ensures we don't consume all SUI and leave some for gas fees
+                // Merge coins into gas first if there are multiple
+                if (coinObjectIds.length > 1) {
+                    tx.mergeCoins(
+                        tx.gas,
+                        coinObjectIds.map((id) => tx.object(id))
+                    );
+                } else {
+                    // If only one coin, merge it into gas
+                    tx.mergeCoins(
+                        tx.gas,
+                        [tx.object(coinObjectIds[0])]
+                    );
+                }
+                // For PUT: collateral is QuoteAsset, calculate amount from collateral
+                // amount = (collateral * PRICE_DECIMALS) / strike_price
+                amountToMint = (amountInQuoteUnits * PRICE_DECIMALS) / strikePriceInBaseUnits;
+                const [splitCoin] = tx.splitCoins(tx.gas, [1000000]);
+                collateralCoin = splitCoin;
+            }
+
+            const optionArguments = option.type === "CALL" ? [
+                tx.object(poolIdToUse), // pool: &mut OptionsPool
+                collateralCoin, // collateral: Coin<BaseAsset>
+                tx.object.clock(), // clock: &Clock
+            ] : [
+                tx.object(poolIdToUse), // pool: &mut OptionsPool
+                collateralCoin, // collateral: Coin<QuoteAsset>
+                tx.pure.u64(amountToMint), // amount: u64 (wrapped with tx.pure)
+                tx.object.clock(), // clock: &Clock
+            ];
             // Call mint_call_options - returns (option_coins, owner_token)
             const [optionCoins, ownerToken] = tx.moveCall({
-                target: `${packageId}::options_pool::mint_call_options`,
+                target: option.type === "CALL" ? `${packageId}::options_pool::mint_call_options` : `${packageId}::options_pool::mint_put_options`,
                 typeArguments: [
                     option.optionTokenType,
                     option.baseAssetType,
                     option.quoteAssetType,
                 ],
-                arguments: [
-                    tx.object(poolIdToUse), // pool: &mut OptionsPool
-                    collateralCoin, // collateral: Coin<BaseAsset>
-                    tx.object.clock(), // clock: &Clock
-                ],
+                arguments: optionArguments as any,
             });
 
-            // Transfer all objects to the user: option coins, owner token, and remainder coin
-            tx.transferObjects(
-                [optionCoins, ownerToken, tx.object(coinObjectIds[0])],
-                currentAccount.address
-            );
+            // Transfer all objects to the user: option coins, owner token, and remainder coin (if CALL)
+            if (option.type === "CALL") {
+                // For CALL: transfer the remainder coin from the split
+                tx.transferObjects(
+                    [optionCoins, ownerToken, tx.object(coinObjectIds[0])],
+                    currentAccount.address
+                );
+            } else {
+                // For PUT: remainder stays in gas coin, only transfer option coins and owner token
+                tx.transferObjects(
+                    [optionCoins, ownerToken],
+                    currentAccount.address
+                );
+            }
             const result = await dAppKit.signAndExecuteTransaction({
                 transaction: tx,
             });
@@ -152,8 +214,9 @@ export function OptionsPage() {
                 throw new Error("Transaction failed");
             }
 
+            const collateralAsset = option.type === "CALL" ? option.baseAsset : option.quoteAsset;
             toast.success("Options minted successfully!", {
-                description: `Minted ${collateralAmount} ${option.baseAsset} worth of options`,
+                description: `Minted options with ${collateralAmount} ${collateralAsset} collateral`,
             });
 
             // Clear form
@@ -183,7 +246,7 @@ export function OptionsPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-3.5rem)] p-6 bg-background">
+        <div className="h-full min-h-0 overflow-auto p-4 sm:p-6 bg-background">
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -254,7 +317,7 @@ export function OptionsPage() {
                                     <div className="space-y-3 pt-2 border-t">
                                         <div className="space-y-1.5">
                                             <label className="text-xs text-muted-foreground uppercase font-bold">
-                                                Collateral ({option.baseAsset})
+                                                Collateral ({option.type === "CALL" ? option.baseAsset : option.quoteAsset})
                                             </label>
                                             <input
                                                 type="number"

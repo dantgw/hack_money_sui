@@ -54,23 +54,23 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
     };
 
     return (
-        <div className="flex flex-col h-full bg-background border-l text-[12px]">
-            {/* Tab Header */}
-            <div className="flex border-b">
+        <div className="flex flex-col h-full bg-background text-[11px] sm:text-[12px]">
+            {/* Tab Header — 44px touch target on mobile */}
+            <div className="flex border-b shrink-0">
                 <button
                     onClick={() => setActiveTab('orderbook')}
-                    className={`flex-1 p-2 font-semibold transition-colors ${activeTab === 'orderbook'
+                    className={`flex-1 py-2.5 px-2 sm:p-2 font-semibold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'orderbook'
                         ? 'bg-primary/10 text-primary border-b-2 border-primary'
-                        : 'text-muted-foreground hover:bg-muted/50'
+                        : 'text-muted-foreground hover:bg-muted/50 active:bg-muted/50'
                         }`}
                 >
                     Order Book
                 </button>
                 <button
                     onClick={() => setActiveTab('trades')}
-                    className={`flex-1 p-2 font-semibold transition-colors ${activeTab === 'trades'
+                    className={`flex-1 py-2.5 px-2 sm:p-2 font-semibold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'trades'
                         ? 'bg-primary/10 text-primary border-b-2 border-primary'
-                        : 'text-muted-foreground hover:bg-muted/50'
+                        : 'text-muted-foreground hover:bg-muted/50 active:bg-muted/50'
                         }`}
                 >
                     Trades
@@ -80,7 +80,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
             {/* Order Book View */}
             {activeTab === 'orderbook' && (
                 <>
-                    <div className="grid grid-cols-3 p-2 text-muted-foreground border-b uppercase tracking-wider">
+                    <div className="grid grid-cols-3 gap-1 p-2 sm:p-2 text-muted-foreground border-b uppercase tracking-wider text-[10px] sm:text-[11px]">
                         <div>Price</div>
                         <div className="text-right">Size</div>
                         <div className="text-right">Total</div>
@@ -95,7 +95,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                                 {orderBookData.asks.map((ask, i) => (
                                     <div
                                         key={`ask-${i}`}
-                                        className="grid grid-cols-3 p-1 hover:bg-red-500/10 relative cursor-pointer"
+                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-red-500/10 active:bg-red-500/20 relative cursor-pointer touch-manipulation"
                                         onClick={() => onSelectPrice?.(ask.price)}
                                     >
                                         <div
@@ -119,7 +119,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                                 {orderBookData.bids.map((bid, i) => (
                                     <div
                                         key={`bid-${i}`}
-                                        className="grid grid-cols-3 p-1 hover:bg-green-500/10 relative cursor-pointer"
+                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-green-500/10 active:bg-green-500/20 relative cursor-pointer touch-manipulation"
                                         onClick={() => onSelectPrice?.(bid.price)}
                                     >
                                         <div
@@ -140,7 +140,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
             {/* Trades View */}
             {activeTab === 'trades' && (
                 <>
-                    <div className="grid grid-cols-3 p-2 text-muted-foreground border-b uppercase tracking-wider">
+                    <div className="grid grid-cols-3 gap-1 p-2 text-muted-foreground border-b uppercase tracking-wider text-[10px] sm:text-[11px]">
                         <div>Price</div>
                         <div className="text-right">Size</div>
                         <div className="text-right">Time</div>
@@ -153,9 +153,9 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                             trades.map((trade) => (
                                 <div
                                     key={trade.id}
-                                    className={`grid grid-cols-3 p-1 ${trade.side === 'buy'
-                                        ? 'hover:bg-green-500/10'
-                                        : 'hover:bg-red-500/10'
+                                    className={`grid grid-cols-3 gap-1 p-2 sm:p-1 ${trade.side === 'buy'
+                                        ? 'hover:bg-green-500/10 active:bg-green-500/20'
+                                        : 'hover:bg-red-500/10 active:bg-red-500/20'
                                         }`}
                                 >
                                     <div className={trade.side === 'buy' ? 'text-green-500' : 'text-red-500'}>

@@ -12,9 +12,9 @@ interface TradingHeaderProps {
 
 export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, isSelectorOpen }: TradingHeaderProps) {
     return (
-        <div className="flex items-center justify-between p-2 bg-background border-b text-[12px]">
-            <div className="flex items-center space-x-6 pl-2">
-                <div className="flex items-center space-x-1 group cursor-pointer" onClick={onOpenSelector}>
+        <div className="flex items-center justify-between p-2 sm:p-2 bg-background border-b text-[11px] sm:text-[12px]">
+            <div className="flex items-center space-x-3 sm:space-x-6 pl-1 sm:pl-2 min-w-0 flex-1">
+                <div className="flex items-center space-x-1 group cursor-pointer min-h-[44px] touch-manipulation py-1" onClick={onOpenSelector}>
                     <div className="flex items-center space-x-2 mr-1">
                         <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">
                             {poolInfo.baseCoin[0]}
