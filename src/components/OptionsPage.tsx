@@ -116,15 +116,15 @@ export function OptionsPage() {
                 return;
             }
 
+            // Convert collateral amount to base units
+            const amountInBaseUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 6)));
+            const amountInQuoteUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 9)));
+
             const tx = new Transaction();
             tx.setSender(currentAccount.address);
 
             // Get all coin object IDs
             const coinObjectIds = coins.data.map((coin) => coin.coinObjectId);
-
-            // Convert collateral amount to base units
-            const amountInBaseUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 6)));
-            const amountInQuoteUnits = BigInt(Math.floor(parseFloat(collateralAmount) * Math.pow(10, 9)));
 
             // For PUT options: calculate amount of options to mint based on collateral
             // required_collateral = (strike_price * amount) / PRICE_DECIMALS
@@ -135,6 +135,7 @@ export function OptionsPage() {
 
             let amountToMint: bigint;
             let collateralCoin;
+            let remainderCoinId = coinObjectIds[0];
 
             if (option.type === "CALL") {
                 // For CALL: collateral is BaseAsset (not SUI), merge coins if needed
@@ -149,25 +150,23 @@ export function OptionsPage() {
                 const [splitCoin] = tx.splitCoins(tx.object(coinObjectIds[0]), [amountInBaseUnits]);
                 collateralCoin = splitCoin;
             } else {
-                // For PUT: collateral is QuoteAsset (SUI), use tx.gas to split
-                // This ensures we don't consume all SUI and leave some for gas fees
-                // Merge coins into gas first if there are multiple
-                if (coinObjectIds.length > 1) {
-                    tx.mergeCoins(
-                        tx.gas,
-                        coinObjectIds.map((id) => tx.object(id))
-                    );
-                } else {
-                    // If only one coin, merge it into gas
-                    tx.mergeCoins(
-                        tx.gas,
-                        [tx.object(coinObjectIds[0])]
-                    );
+                // For PUT: use only ONE coin for collateral so wallet has other coins for gas
+                // (setGasPayment can't overlap with inputs - we'd use same coin for both)
+                // Pick the coin with largest balance that has enough for collateral
+                const coinsWithBalance = coins.data
+                    .filter((c) => BigInt(c.balance) >= amountInQuoteUnits)
+                    .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
+                if (coinsWithBalance.length === 0) {
+                    toast.error("No single coin has enough balance", {
+                        description: `You need ${collateralAmount} SUI in one coin. Try consolidating your SUI first.`,
+                    });
+                    setMintingPool(null);
+                    return;
                 }
+                remainderCoinId = coinsWithBalance[0].coinObjectId;
                 // For PUT: collateral is QuoteAsset, calculate amount from collateral
-                // amount = (collateral * PRICE_DECIMALS) / strike_price
                 amountToMint = (amountInQuoteUnits * PRICE_DECIMALS) / strikePriceInBaseUnits;
-                const [splitCoin] = tx.splitCoins(tx.gas, [1000000]);
+                const [splitCoin] = tx.splitCoins(tx.object(remainderCoinId), [Number(amountInQuoteUnits)]);
                 collateralCoin = splitCoin;
             }
 
@@ -192,20 +191,11 @@ export function OptionsPage() {
                 arguments: optionArguments as any,
             });
 
-            // Transfer all objects to the user: option coins, owner token, and remainder coin (if CALL)
-            if (option.type === "CALL") {
-                // For CALL: transfer the remainder coin from the split
-                tx.transferObjects(
-                    [optionCoins, ownerToken, tx.object(coinObjectIds[0])],
-                    currentAccount.address
-                );
-            } else {
-                // For PUT: remainder stays in gas coin, only transfer option coins and owner token
-                tx.transferObjects(
-                    [optionCoins, ownerToken],
-                    currentAccount.address
-                );
-            }
+            // Transfer objects to the user: option coins, owner token, and remainder
+            tx.transferObjects(
+                [optionCoins, ownerToken, tx.object(remainderCoinId)],
+                currentAccount.address
+            );
             const result = await dAppKit.signAndExecuteTransaction({
                 transaction: tx,
             });

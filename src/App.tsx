@@ -4,7 +4,8 @@ import { Button } from "./components/ui/button";
 import { Toaster } from "sonner";
 import { NETWORK_STORAGE_KEY } from "./dApp-kit";
 
-import { NavLink, Route, Routes } from "react-router-dom";
+import { Link, NavLink, Route, Routes } from "react-router-dom";
+import logo from "./assets/logo.png";
 import { OptionsPage } from "./components/OptionsPage";
 import { AccountPage } from "./components/AccountPage";
 import { TrendingUp, FileText, User } from "lucide-react";
@@ -38,7 +39,9 @@ function App() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="w-full flex h-12 sm:h-14 items-center justify-between px-3 sm:px-4 gap-2">
           {/* Left: Brand — always visible */}
-          <h1 className="text-base sm:text-lg font-semibold shrink-0">Varuna</h1>
+          <Link to="/" className="shrink-0 flex items-center">
+            <img src={logo} alt="Varuna" className="h-8 sm:h-9 w-auto" />
+          </Link>
 
           {/* Center: Desktop nav (hidden on mobile — bottom tabs instead) */}
           <nav className="hidden lg:flex items-center gap-1">
