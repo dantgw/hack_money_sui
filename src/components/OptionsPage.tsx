@@ -180,6 +180,7 @@ export function OptionsPage() {
             let amountToMint: bigint;
             let collateralCoin;
             let remainderCoinId = coinObjectIds[0];
+            let includeRemainder = true;
 
             if (option.type === "CALL") {
                 // For CALL: collateral is BaseAsset (not SUI), merge coins if needed
@@ -194,27 +195,21 @@ export function OptionsPage() {
                 const [splitCoin] = tx.splitCoins(tx.object(coinObjectIds[0]), [amountInBaseUnits]);
                 collateralCoin = splitCoin;
             } else {
-                // For PUT: SUI is collateral + gas. Split out gas reserve so wallet has coins for gas.
-                const GAS_RESERVE_MIST = 200_000_000n; // 0.2 SUI
+                // For PUT: split collateral from tx.gas - wallet picks coin for gas, we split collateral from it
+                const GAS_RESERVE_MIST = 200_000_000n; // 0.2 SUI - must leave enough for gas
                 const totalRequired = amountInQuoteUnits + GAS_RESERVE_MIST;
-                const coinsWithBalance = coins.data
-                    .filter((c) => BigInt(c.balance) >= totalRequired)
-                    .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-                if (coinsWithBalance.length === 0) {
+                const totalBalance = coins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+                if (totalBalance < totalRequired) {
                     toast.error("Insufficient SUI for collateral + gas", {
-                        description: `Need ${collateralAmount} SUI + ~0.2 SUI for gas in one coin. Total: ${(Number(totalRequired) / 1e9).toFixed(4)} SUI.`,
+                        description: `Need ${(Number(amountInQuoteUnits) / 1e9).toFixed(4)} SUI + ~0.2 SUI for gas`,
                     });
                     setMintingPool(null);
                     return;
                 }
-                remainderCoinId = coinsWithBalance[0].coinObjectId;
                 amountToMint = (amountInQuoteUnits * PRICE_DECIMALS) / strikePriceInBaseUnits;
-                const [collateralSplit, gasSplit] = tx.splitCoins(tx.object(remainderCoinId), [
-                    Number(amountInQuoteUnits),
-                    Number(GAS_RESERVE_MIST),
-                ]);
-                collateralCoin = collateralSplit;
-
+                const [splitCoin] = tx.splitCoins(tx.gas, [Number(amountInQuoteUnits)]);
+                collateralCoin = splitCoin;
+                includeRemainder = false; // No remainder to transfer - gas coin handled by wallet
             }
 
             const optionArguments = option.type === "CALL" ? [
@@ -238,11 +233,13 @@ export function OptionsPage() {
                 arguments: optionArguments as any,
             });
 
-            // Transfer objects to the user: option coins, owner token, and remainder
-            tx.transferObjects(
-                [optionCoins, ownerToken, tx.object(remainderCoinId)],
-                currentAccount.address
-            );
+            // Transfer objects to the user: option coins, owner token, and remainder (for CALL only - PUT uses tx.gas)
+            const toTransfer: Parameters<typeof tx.transferObjects>[0] = [
+                optionCoins,
+                ownerToken,
+                ...(includeRemainder ? [tx.object(remainderCoinId)] : []),
+            ];
+            tx.transferObjects(toTransfer, currentAccount.address);
             const result = await dAppKit.signAndExecuteTransaction({
                 transaction: tx,
             });
