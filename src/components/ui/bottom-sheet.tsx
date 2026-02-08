@@ -6,7 +6,7 @@ interface BottomSheetProps {
     open: boolean;
     onClose: () => void;
     children: React.ReactNode;
-    title?: string;
+    title?: React.ReactNode;
 }
 
 export function BottomSheet({ open, onClose, children, title }: BottomSheetProps) {
@@ -59,9 +59,11 @@ export function BottomSheet({ open, onClose, children, title }: BottomSheetProps
                 </div>
 
                 {/* Header with close button */}
-                <div className="flex shrink-0 items-center justify-between border-b px-4 pb-3">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b px-4 pb-3">
                     {title && (
-                        <h3 className="font-semibold text-lg">{title}</h3>
+                        <div className="min-w-0 flex-1 flex items-center">
+                            {title}
+                        </div>
                     )}
                     <button
                         type="button"

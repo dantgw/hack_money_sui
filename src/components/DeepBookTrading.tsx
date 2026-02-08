@@ -9,6 +9,19 @@ import {
   MarketPrice,
 } from '../lib/deepbook';
 import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '../lib/utils';
+import deepLogo from '../assets/deep-logo.png';
+import suiLogo from '../assets/sui-logo.png';
+import usdcLogo from '../assets/usdc-logo.png';
+import walrusLogo from '../assets/walrus-logo.webp';
+
+const ASSET_LOGOS: Record<string, string> = {
+    DEEP: deepLogo,
+    SUI: suiLogo,
+    USDC: usdcLogo,
+    WAL: walrusLogo,
+    WALRUS: walrusLogo,
+};
 import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
@@ -370,7 +383,21 @@ export function DeepBookTrading() {
       <BottomSheet
         open={tradeDrawerOpen}
         onClose={() => setTradeDrawerOpen(false)}
-        title={selectedPoolInfo ? `${selectedPoolInfo.baseCoin}-${selectedPoolInfo.quoteCoin}` : undefined}
+        title={selectedPoolInfo ? (
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-6 h-6 rounded-full overflow-hidden flex items-center justify-center shrink-0",
+              !ASSET_LOGOS[selectedPoolInfo.baseCoin] && "bg-orange-500"
+            )}>
+              {ASSET_LOGOS[selectedPoolInfo.baseCoin] ? (
+                <img src={ASSET_LOGOS[selectedPoolInfo.baseCoin]} alt={selectedPoolInfo.baseCoin} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-bold text-[10px]">{selectedPoolInfo.baseCoin[0]}</span>
+              )}
+            </div>
+            <span className="font-semibold text-lg">{selectedPoolInfo.baseCoin}-{selectedPoolInfo.quoteCoin}</span>
+          </div>
+        ) : undefined}
       >
         <div className="flex flex-col gap-2 pb-6">
           <div className="px-4">

@@ -541,16 +541,16 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                 {compact ? (
                     /* Compact: Buy/Sell + Order type dropdown on same row */
                     <div className="flex gap-2 items-stretch">
-                        <div className="flex flex-1 min-w-0 rounded-md bg-muted p-1">
+                        <div className="flex flex-1 min-w-0 h-[44px] rounded-md bg-muted p-1">
                             <button
                                 onClick={() => setSide('buy')}
-                                className={cn("flex-1 py-2.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
                             >
                                 Buy
                             </button>
                             <button
                                 onClick={() => setSide('sell')}
-                                className={cn("flex-1 py-2.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
                             >
                                 Sell
                             </button>
