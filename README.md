@@ -28,7 +28,9 @@ are not exposed to the unlimited downside risk of naked options. By leveraging
 SUI's native DeepBook order book protocol, Varuna brings institutional-grade
 options infrastructure to the Sui blockchain—with permissionless pool creation,
 fully collateralized options, and seamless composability with DeepBook's
-existing liquidity network.
+existing liquidity network. We have also built a beautiful frontend interface
+that integrates with DeepBook for spot trading and options management. The
+design is mobile responsive and suitable for viewing on mobile devices.
 
 ### Key Features
 
