@@ -77,8 +77,8 @@ export function OptionsActionPanel({
                                 </div>
                                 <span
                                     className={`px-2 py-0.5 rounded text-xs font-semibold shrink-0 ${selectedOption.type === "CALL"
-                                            ? "bg-primary/20 text-primary"
-                                            : "bg-destructive/20 text-destructive"
+                                        ? "bg-primary/20 text-primary"
+                                        : "bg-destructive/20 text-destructive"
                                         }`}
                                 >
                                     {selectedOption.type}
