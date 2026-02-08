@@ -237,7 +237,7 @@ export function PortfolioChart({
     <div className={cn("w-full animate-fade-slide-up", className)}>
       <div
         ref={chartContainerRef}
-        className="w-full h-[180px] sm:h-[220px] -mx-1"
+        className="w-full h-[180px] sm:h-[220px] lg:h-[380px] xl:h-[420px] -mx-1"
         style={{ minHeight: 180 }}
       />
       <div className="flex gap-1 mt-4 justify-center sm:justify-start flex-wrap">

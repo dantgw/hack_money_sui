@@ -53,6 +53,10 @@ function App() {
               <FileText className="h-4 w-4" />
               Options
             </NavLink>
+            <NavLink to="/account" className={navLinkClass}>
+              <User className="h-4 w-4" />
+              Account
+            </NavLink>
           </nav>
 
           {/* Right: Wallet & network — compact on mobile */}
