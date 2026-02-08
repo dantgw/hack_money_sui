@@ -35,16 +35,16 @@ function App() {
 
   return (
     <div className="min-h-dvh min-h-screen flex flex-col bg-background">
-      {/* Header — minimal on mobile, full nav on desktop */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
+      {/* Header — bold borders, font-display, logo brand */}
+      <header className="sticky top-0 z-50 border-b-2 border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
         <div className="w-full flex h-12 sm:h-14 items-center justify-between px-3 sm:px-4 gap-2">
           {/* Left: Brand — always visible */}
-          <Link to="/" className="shrink-0 flex items-center">
+          <Link to="/" className="shrink-0 flex items-center font-display font-bold text-lg">
             <img src={logo} alt="Varuna" className="h-8 sm:h-9 w-auto" />
           </Link>
 
           {/* Center: Desktop nav (hidden on mobile — bottom tabs instead) */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1 font-display">
             <NavLink to="/" className={navLinkClass}>
               <TrendingUp className="h-4 w-4" />
               DeepBook
@@ -65,11 +65,11 @@ function App() {
               variant="outline"
               size="sm"
               onClick={toggleNetwork}
-              className="font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 shrink-0"
+              className="font-display font-semibold text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 shrink-0 border-2"
             >
               {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
             </Button>
-            <div className="hidden lg:block [&_button]:h-8 [&_button]:text-xs sm:[&_button]:h-9 sm:[&_button]:text-sm">
+            <div className="hidden lg:block [&_button]:h-8 [&_button]:text-xs sm:[&_button]:h-9 sm:[&_button]:text-sm [&_button]:font-display [&_button]:border-2">
               <ConnectButton />
             </div>
           </div>
@@ -88,10 +88,10 @@ function App() {
       </main>
 
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t-2 border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
         aria-label="Main navigation"
       >
-        <div className="flex items-stretch h-14">
+        <div className="flex items-stretch h-14 font-display">
           <NavLink to="/" className={bottomTabClass}>
             {({ isActive }) => (
               <>

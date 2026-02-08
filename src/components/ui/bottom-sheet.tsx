@@ -61,7 +61,7 @@ export function BottomSheet({ open, onClose, children, title, className }: Botto
                 </div>
 
                 {/* Header with close button */}
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b px-4 pb-3">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-border px-4 pb-3">
                     {title && (
                         <div className="min-w-0 flex-1 flex items-center">
                             {title}

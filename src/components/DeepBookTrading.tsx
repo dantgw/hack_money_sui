@@ -294,7 +294,7 @@ export function DeepBookTrading() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
         <RefreshCw className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Initialising DeepBook...</p>
+        <p className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">Initialising DeepBook...</p>
       </div>
     );
   }
@@ -351,19 +351,19 @@ export function DeepBookTrading() {
           </div>
 
           {/* Account Panel — Desktop: always visible below chart */}
-          <div className="hidden lg:block h-[280px] xl:h-[300px] border-t overflow-hidden bg-background shrink-0">
+          <div className="hidden lg:block h-[280px] xl:h-[300px] border-t-2 border-border overflow-hidden bg-background shrink-0">
             <AccountPanel poolName={selectedPool || ''} />
           </div>
         </div>
 
-        {/* Mobile: Buy/Sell bar — fixed above bottom nav, opens trade drawer */}
-        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t">
+        {/* Mobile: Buy/Sell bar — bold, cartoonish CTAs */}
+        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t-2 border-border">
           <button
             onClick={() => {
               setTradeDrawerSide('buy');
               setTradeDrawerOpen(true);
             }}
-            className="flex-1 py-3 rounded-lg font-semibold text-base bg-green-600 hover:bg-green-700 active:bg-green-800 text-white transition-colors touch-manipulation"
+            className="flex-1 py-3 rounded-lg font-display font-bold text-base bg-primary hover:bg-primary/90 active:brightness-95 text-primary-foreground border-2 border-primary shadow-lg transition-all touch-manipulation"
           >
             Buy
           </button>
@@ -372,14 +372,14 @@ export function DeepBookTrading() {
               setTradeDrawerSide('sell');
               setTradeDrawerOpen(true);
             }}
-            className="flex-1 py-3 rounded-lg font-semibold text-base bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-colors touch-manipulation"
+            className="flex-1 py-3 rounded-lg font-display font-bold text-base bg-destructive hover:bg-destructive/90 active:brightness-95 text-destructive-foreground border-2 border-destructive shadow-lg transition-all touch-manipulation"
           >
             Sell
           </button>
         </div>
 
         {/* Desktop: Order Book (Fixed Width) */}
-        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l border-r bg-background overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l-2 border-r-2 border-border bg-background overflow-hidden">
           <OrderBook
             poolName={selectedPool || ''}
             network={network}
@@ -454,18 +454,18 @@ export function DeepBookTrading() {
         </div>
       </BottomSheet>
 
-      {/* Footer Status Bar — hidden on mobile for more chart space */}
-      <div className="hidden sm:flex h-6 sm:h-7 border-t bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0">
+      {/* Footer Status Bar — badge style, logo green accent */}
+      <div className="hidden sm:flex h-6 sm:h-7 border-t-2 border-border bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0 font-display">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <div className="flex items-center gap-1 shrink-0">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-            <span className="truncate">Operational</span>
+          <div className="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-md border border-primary/50 bg-primary/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 animate-pulse" />
+            <span className="truncate font-semibold text-primary">Operational</span>
           </div>
           <div className="hidden sm:block shrink-0">API Latency: 42ms</div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="hidden md:block shrink-0">v3.1.0-deepbook</div>
-          <div className="text-primary font-bold shrink-0 truncate max-w-[120px] sm:max-w-none">
+          <div className="text-primary font-bold shrink-0 truncate max-w-[120px] sm:max-w-none tabular-nums">
             2026 Feb 03 14:04:54
           </div>
         </div>

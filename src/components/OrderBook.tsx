@@ -55,12 +55,12 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
 
     return (
         <div className="flex flex-col h-full bg-background text-[11px] sm:text-[12px]">
-            {/* Tab Header — 44px touch target on mobile */}
-            <div className="flex border-b shrink-0">
+            {/* Tab Header — bold borders, font-display */}
+            <div className="flex border-b-2 border-border shrink-0 font-display">
                 <button
                     onClick={() => setActiveTab('orderbook')}
-                    className={`flex-1 py-2.5 px-2 sm:p-2 font-semibold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'orderbook'
-                        ? 'bg-primary/10 text-primary border-b-2 border-primary'
+                    className={`flex-1 py-2.5 px-2 sm:p-2 font-bold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'orderbook'
+                        ? 'bg-primary/10 text-primary border-b-2 border-primary -mb-[2px]'
                         : 'text-muted-foreground hover:bg-muted/50 active:bg-muted/50'
                         }`}
                 >
@@ -68,8 +68,8 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                 </button>
                 <button
                     onClick={() => setActiveTab('trades')}
-                    className={`flex-1 py-2.5 px-2 sm:p-2 font-semibold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'trades'
-                        ? 'bg-primary/10 text-primary border-b-2 border-primary'
+                    className={`flex-1 py-2.5 px-2 sm:p-2 font-bold transition-colors min-h-[44px] touch-manipulation ${activeTab === 'trades'
+                        ? 'bg-primary/10 text-primary border-b-2 border-primary -mb-[2px]'
                         : 'text-muted-foreground hover:bg-muted/50 active:bg-muted/50'
                         }`}
                 >
@@ -95,14 +95,14 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                                 {orderBookData.asks.map((ask, i) => (
                                     <div
                                         key={`ask-${i}`}
-                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-red-500/10 active:bg-red-500/20 relative cursor-pointer touch-manipulation"
+                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-destructive/10 active:bg-destructive/20 relative cursor-pointer touch-manipulation"
                                         onClick={() => onSelectPrice?.(ask.price)}
                                     >
                                         <div
-                                            className="absolute inset-y-0 right-0 bg-red-500/5 transition-all"
+                                            className="absolute inset-y-0 right-0 bg-destructive/5 transition-all"
                                             style={{ width: `${(ask.price * ask.quantity / maxTotal) * 100}%` }}
                                         />
-                                        <div className="text-red-500 z-10">{ask.price.toFixed(4)}</div>
+                                        <div className="text-destructive z-10">{ask.price.toFixed(4)}</div>
                                         <div className="text-right z-10">{ask.quantity.toFixed(2)}</div>
                                         <div className="text-right z-10">{(ask.price * ask.quantity).toFixed(2)}</div>
                                     </div>
@@ -110,7 +110,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                             </div>
 
                             {/* Spread */}
-                            <div className="p-2 border-y bg-muted/30 text-center font-medium">
+                            <div className="p-2 border-y-2 border-border bg-muted/30 text-center font-medium tabular-nums">
                                 Spread: {Math.abs(orderBookData?.asks?.[0]?.price - orderBookData?.bids?.[0]?.price).toFixed(5)}
                             </div>
 
@@ -119,14 +119,14 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                                 {orderBookData.bids.map((bid, i) => (
                                     <div
                                         key={`bid-${i}`}
-                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-green-500/10 active:bg-green-500/20 relative cursor-pointer touch-manipulation"
+                                        className="grid grid-cols-3 gap-1 p-2 sm:p-1 hover:bg-primary/10 active:bg-primary/20 relative cursor-pointer touch-manipulation"
                                         onClick={() => onSelectPrice?.(bid.price)}
                                     >
                                         <div
-                                            className="absolute inset-y-0 right-0 bg-green-500/5 transition-all"
+                                            className="absolute inset-y-0 right-0 bg-primary/5 transition-all"
                                             style={{ width: `${(bid.price * bid.quantity / maxTotal) * 100}%` }}
                                         />
-                                        <div className="text-green-500 z-10">{bid.price.toFixed(4)}</div>
+                                        <div className="text-primary z-10">{bid.price.toFixed(4)}</div>
                                         <div className="text-right z-10">{bid.quantity.toFixed(2)}</div>
                                         <div className="text-right z-10">{(bid.price * bid.quantity).toFixed(2)}</div>
                                     </div>
@@ -154,11 +154,11 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
                                 <div
                                     key={trade.id}
                                     className={`grid grid-cols-3 gap-1 p-2 sm:p-1 ${trade.side === 'buy'
-                                        ? 'hover:bg-green-500/10 active:bg-green-500/20'
-                                        : 'hover:bg-red-500/10 active:bg-red-500/20'
+                                        ? 'hover:bg-primary/10 active:bg-primary/20'
+                                        : 'hover:bg-destructive/10 active:bg-destructive/20'
                                         }`}
                                 >
-                                    <div className={trade.side === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                                    <div className={trade.side === 'buy' ? 'text-primary' : 'text-destructive'}>
                                         {trade.price.toFixed(4)}
                                     </div>
                                     <div className="text-right">{trade.size.toFixed(2)}</div>

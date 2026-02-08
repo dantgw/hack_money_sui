@@ -80,11 +80,11 @@ export function AccountPage() {
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Hero: Account value + daily change (Robinhood-style) */}
         <div className="pt-2 lg:pt-4">
-          <h2 className="text-xl lg:text-2xl font-semibold animate-count-up opacity-0 [animation-fill-mode:forwards]">Simulated Account</h2>
+          <h2 className="font-display text-xl lg:text-2xl font-bold animate-count-up opacity-0 [animation-fill-mode:forwards]">Simulated Account</h2>
 
 
           <div className="mt-6 lg:mt-8 animate-count-up opacity-0 [animation-fill-mode:forwards] [animation-delay:200ms]">
-            <div className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight tabular-nums">
+            <div className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight tabular-nums">
               <AnimatedNumber value={totalValue} prefix="$" duration={1000} />
             </div>
             <div
@@ -113,7 +113,7 @@ export function AccountPage() {
         {/* Chart then settings — same order on mobile and desktop */}
         <div>
           {/* Trading history graph with timeframe selector */}
-          <Card className="overflow-hidden border-0 bg-card/50">
+          <Card className="overflow-hidden border-2 border-border bg-card/50">
             <CardContent className="pt-6 lg:pt-8 px-4 sm:px-6 lg:px-0">
               <PortfolioChart
                 totalValue={totalValue}
@@ -127,9 +127,9 @@ export function AccountPage() {
           <div className="pt-2">
             <h3 className="text-sm font-medium text-muted-foreground px-1 mb-3">Settings</h3>
 
-            <div className="rounded-xl border bg-card/30">
+            <div className="rounded-xl border-2 border-border bg-card/30">
               {/* Wallet */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+              <div className="flex items-center justify-between px-4 py-3 border-b-2 border-border/50">
                 <div className="flex items-center gap-3 min-w-0">
                   <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div>
@@ -144,7 +144,7 @@ export function AccountPage() {
 
               {/* BalanceManager address & balance (when connected) */}
               {currentAccount && (
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+                <div className="flex items-center justify-between px-4 py-3 border-b-2 border-border/50">
                   <div className="flex items-center gap-3 min-w-0">
                     <Coins className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div>
@@ -203,7 +203,7 @@ export function AccountPage() {
             </div>
 
             {currentAccount && (
-              <Card className="mt-4 rounded-xl border bg-card/30 ">
+              <Card className="mt-4 rounded-xl border-2 border-border bg-card/30">
                 <CardContent className="px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" />

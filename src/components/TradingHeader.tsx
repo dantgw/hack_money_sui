@@ -26,7 +26,7 @@ interface TradingHeaderProps {
 
 export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, isSelectorOpen }: TradingHeaderProps) {
     return (
-        <div className="flex items-center justify-between p-2 sm:p-2 bg-background border-b text-[11px] sm:text-[12px]">
+        <div className="flex items-center justify-between p-2 sm:p-2 bg-background border-b-2 border-border text-[11px] sm:text-[12px] font-display">
             <div className="flex items-center space-x-3 sm:space-x-6 pl-1 sm:pl-2 min-w-0 flex-1">
                 <div className="flex items-center space-x-1 group cursor-pointer min-h-[44px] touch-manipulation py-1" onClick={onOpenSelector}>
                     <div className="flex items-center space-x-2 mr-1">
@@ -40,7 +40,7 @@ export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, 
                                 <span className="text-white font-bold text-[10px]">{poolInfo.baseCoin[0]}</span>
                             )}
                         </div>
-                        <div className="font-bold text-base transition-colors group-hover:text-primary">
+                        <div className="font-bold text-base tabular-nums transition-colors group-hover:text-primary">
                             {poolInfo.baseCoin}-{poolInfo.quoteCoin}
                         </div>
                     </div>
@@ -49,24 +49,24 @@ export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, 
                     </div>
                 </div>
 
-                <div className="flex flex-col border-l pl-4">
+                <div className="flex flex-col border-l-2 border-border pl-4">
                     <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-tighter">Mark Price</span>
-                    <span className={`font-bold ${marketPrice ? 'text-green-400' : ''}`}>
+                    <span className={`font-bold tabular-nums ${marketPrice ? 'text-primary' : ''}`}>
                         {marketPrice ? marketPrice.midPrice.toFixed(4) : '---'}
                     </span >
                 </div>
 
-                <div className="hidden md:flex flex-col border-l pl-4">
+                <div className="hidden md:flex flex-col border-l-2 border-border pl-4">
                     <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-tighter">24h Change</span>
-                    <span className="font-medium text-green-400">+2.45%</span>
+                    <span className="font-medium text-primary tabular-nums">+2.45%</span>
                 </div>
 
-                <div className="hidden lg:flex flex-col border-l pl-4">
+                <div className="hidden lg:flex flex-col border-l-2 border-border pl-4">
                     <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-tighter">24h Volume</span>
                     <span className="font-medium text-foreground">$1,245,678</span>
                 </div>
 
-                <div className="hidden xl:flex flex-col border-l pl-4">
+                <div className="hidden xl:flex flex-col border-l-2 border-border pl-4">
                     <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-tighter">Network</span>
                     <span className="font-medium text-primary capitalize">{network}</span>
                 </div>

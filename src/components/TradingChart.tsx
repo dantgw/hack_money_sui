@@ -266,13 +266,13 @@ export function TradingChart({
 
             chartRef.current = chart;
 
-            // Add candlestick series
+            // Add candlestick series (logo palette: primary green for up, destructive red for down)
             const candlestickSeries = chart.addSeries(CandlestickSeries, {
-                upColor: '#26a69a',
-                downColor: '#ef5350',
+                upColor: '#22c55e',
+                downColor: '#ef4444',
                 borderVisible: false,
-                wickUpColor: '#26a69a',
-                wickDownColor: '#ef5350',
+                wickUpColor: '#22c55e',
+                wickDownColor: '#ef4444',
             });
 
             seriesRef.current = candlestickSeries;
