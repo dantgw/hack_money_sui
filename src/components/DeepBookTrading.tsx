@@ -332,7 +332,7 @@ export function DeepBookTrading() {
           )}
 
           {/* Chart Area — on mobile use most of viewport (header ~4rem, bar+nav ~8rem) */}
-          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative bg-[#0c0d10] overflow-hidden">
+          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative bg-background overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}

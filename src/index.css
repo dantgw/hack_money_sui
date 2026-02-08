@@ -2,23 +2,23 @@
 
 /* Varuna theme — meme-y, cartoonish, WSB-inspired (logo palette) */
 @theme {
-  /* Logo palette: vibrant green, creamy yellow, black, white */
-  --color-background: #0a0a0a;
-  --color-foreground: #fafafa;
-  --color-card: #111111;
-  --color-card-foreground: #fafafa;
+  /* Distinctive palette: dark forest green undertones, warm cream text */
+  --color-background: #0d1210;
+  --color-foreground: #f0ede8;
+  --color-card: #111916;
+  --color-card-foreground: #f0ede8;
   --color-primary: #22c55e;
-  --color-primary-foreground: #0a0a0a;
-  --color-secondary: #1a1a1a;
-  --color-secondary-foreground: #fafafa;
-  --color-muted: #262626;
-  --color-muted-foreground: #a3a3a3;
+  --color-primary-foreground: #0d1210;
+  --color-secondary: #161d19;
+  --color-secondary-foreground: #f0ede8;
+  --color-muted: #1e2824;
+  --color-muted-foreground: #8a9288;
   --color-accent: #fef08a;
-  --color-accent-foreground: #0a0a0a;
+  --color-accent-foreground: #0d1210;
   --color-destructive: #ef4444;
-  --color-destructive-foreground: #fafafa;
-  --color-border: #262626;
-  --color-input: #262626;
+  --color-destructive-foreground: #f0ede8;
+  --color-border: #2a332e;
+  --color-input: #2a332e;
   --color-ring: #22c55e;
   --color-sui: oklch(0.7 0.2 220);
 

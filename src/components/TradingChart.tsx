@@ -233,25 +233,25 @@ export function TradingChart({
                 height,
                 autoSize: true, // Handles mobile resize; uses ResizeObserver internally
                 layout: {
-                    background: { type: ColorType.Solid, color: '#0c0d10' },
-                    textColor: '#d1d4dc',
+                    background: { type: ColorType.Solid, color: '#0d1210' },
+                    textColor: '#e8e6e1',
                 },
                 grid: {
-                    vertLines: { color: '#1a1a1a' },
-                    horzLines: { color: '#1a1a1a' },
+                    vertLines: { color: '#1e2824' },
+                    horzLines: { color: '#1e2824' },
                 },
                 crosshair: {
                     mode: 1,
                 },
                 rightPriceScale: {
-                    borderColor: '#2a2a2a',
+                    borderColor: '#2a332e',
                     scaleMargins: {
                         top: 0.1,
                         bottom: 0.1,
                     },
                 },
                 timeScale: {
-                    borderColor: '#2a2a2a',
+                    borderColor: '#2a332e',
                     timeVisible: true,
                     secondsVisible: false,
                     rightOffset: 10,
@@ -592,7 +592,7 @@ export function TradingChart({
                         <ChevronDown className="w-3 h-3" />
                     </button>
                     {isDropdownOpen && (
-                        <div className="absolute top-full left-0 mt-1 bg-[#15171c] border border-white/10 rounded-lg shadow-lg overflow-hidden min-w-[80px] z-50">
+                        <div className="absolute top-full left-0 mt-1 bg-card border-2 border-border rounded-lg shadow-lg overflow-hidden min-w-[80px] z-50">
                             {INTERVAL_OPTIONS.map((option) => (
                                 <button
                                     key={option.value}
