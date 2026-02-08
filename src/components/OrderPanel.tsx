@@ -58,9 +58,11 @@ interface OrderPanelProps {
     poolInfo: PoolInfo | null;
     currentPrice: number;
     selectedPriceFromOrderBook?: number | null;
+    /** When provided (e.g. from mobile drawer), pre-select buy or sell */
+    initialSide?: 'buy' | 'sell';
 }
 
-export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook }: OrderPanelProps) {
+export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook, initialSide }: OrderPanelProps) {
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
     const dAppKit = useDAppKit();
@@ -98,6 +100,11 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook 
             setPrice(selectedPriceFromOrderBook.toString());
         }
     }, [selectedPriceFromOrderBook]);
+
+    // Sync side when initialSide is provided (e.g. from mobile drawer Buy/Sell buttons)
+    useEffect(() => {
+        if (initialSide) setSide(initialSide);
+    }, [initialSide]);
 
     // Fetch BalanceManager when account changes
     useEffect(() => {

@@ -543,7 +543,7 @@ export function TradingChart({
     };
 
     return (
-        <div className="relative w-full h-full flex flex-col">
+        <div className="absolute inset-0 flex flex-col min-h-0">
             {/* Interval Controls */}
             <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
                 <button
@@ -612,8 +612,8 @@ export function TradingChart({
                 </div>
             </div>
 
-            {/* Chart Container — min-h ensures layout on mobile before Lightweight Charts measures */}
-            <div ref={chartContainerRef} className="flex-1 w-full min-h-[120px] sm:min-h-[150px]" />
+            {/* Chart Container — flex-1 fills available space; min-h for Lightweight Charts init */}
+            <div ref={chartContainerRef} className="flex-1 min-h-0 w-full min-h-[200px]" />
         </div>
     );
 }

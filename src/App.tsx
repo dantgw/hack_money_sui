@@ -61,7 +61,7 @@ function App() {
               variant="outline"
               size="sm"
               onClick={toggleNetwork}
-              className="font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 hidden sm:inline-flex"
+              className="font-medium text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 shrink-0"
             >
               {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
             </Button>
@@ -73,7 +73,7 @@ function App() {
       </header>
 
       {/* Main content — room for bottom tab bar on mobile */}
-      <main className="flex-1 min-h-0 overflow-hidden pb-[72px] lg:pb-0 flex flex-col">
+      <main className="flex-1 min-h-0 overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0 flex flex-col">
         <div className="flex-1 min-h-0 overflow-hidden">
           <Routes>
             <Route path="/" element={<DeepBookTrading />} />

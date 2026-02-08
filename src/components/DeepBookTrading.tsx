@@ -8,16 +8,14 @@ import {
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
-import { RefreshCw, BookOpen, Activity, LayoutList } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
 import { TradingHeader } from './TradingHeader';
 import { PoolSelectorPopup } from './PoolSelectorPopup';
+import { BottomSheet } from './ui/bottom-sheet';
 import { useCurrentNetwork } from '@mysten/dapp-kit-react';
-import { cn } from '../lib/utils';
-
-type MobileTab = 'orderbook' | 'trade' | 'account';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -31,7 +29,8 @@ export function DeepBookTrading() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const network = useCurrentNetwork();
   const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
-  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>('trade');
+  const [tradeDrawerOpen, setTradeDrawerOpen] = useState(false);
+  const [tradeDrawerSide, setTradeDrawerSide] = useState<'buy' | 'sell'>('buy');
 
   useEffect(() => {
     const loadPools = async () => {
@@ -270,19 +269,13 @@ export function DeepBookTrading() {
 
   const selectedPoolInfo = pools.find((p) => p.poolName === selectedPool);
 
-  const mobileTabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'orderbook', label: 'Order Book', icon: <BookOpen className="h-4 w-4" /> },
-    { id: 'trade', label: 'Trade', icon: <Activity className="h-4 w-4" /> },
-    { id: 'account', label: 'Account', icon: <LayoutList className="h-4 w-4" /> },
-  ];
-
   return (
     <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden selection:bg-primary/30 relative">
       {/* Main Layout Container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
         {/* Left Section: Header, Chart (Top) & Account Panel (Bottom) — Desktop only for Account */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-[60px] lg:pb-0">
           {/* Symbol Header */}
           {selectedPoolInfo && (
             <div className="relative shrink-0">
@@ -306,8 +299,8 @@ export function DeepBookTrading() {
             </div>
           )}
 
-          {/* Chart Area */}
-          <div className="flex-1 min-h-[180px] sm:min-h-[560px] relative bg-[#0c0d10] overflow-hidden">
+          {/* Chart Area — on mobile use most of viewport (header ~4rem, bar+nav ~8rem) */}
+          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative bg-[#0c0d10] overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}
@@ -331,56 +324,26 @@ export function DeepBookTrading() {
           </div>
         </div>
 
-        {/* Mobile: Tab bar + content */}
-        <div className="lg:hidden flex flex-col border-t bg-background shrink-0 min-h-0">
-          {/* Tab bar — 44px minimum touch target for accessibility */}
-          <div className="flex border-b bg-muted/20">
-            {mobileTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveMobileTab(tab.id)}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-3 px-2 font-medium text-sm transition-colors min-h-[44px] touch-manipulation',
-                  activeMobileTab === tab.id
-                    ? 'bg-background text-primary border-b-2 border-primary -mb-px'
-                    : 'text-muted-foreground hover:text-foreground active:bg-muted/50'
-                )}
-              >
-                <span className="hidden sm:inline">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Tab content — scrollable with max height */}
-          <div className="flex-1 min-h-0 overflow-auto max-h-[45vh] sm:max-h-[50vh]">
-            {activeMobileTab === 'orderbook' && (
-              <div className="h-full min-h-[280px]">
-                <OrderBook
-                  poolName={selectedPool || ''}
-                  network={network}
-                  onSelectPrice={(price) => {
-                    setSelectedPriceFromOrderBook(price);
-                    setActiveMobileTab('trade');
-                  }}
-                />
-              </div>
-            )}
-            {activeMobileTab === 'trade' && (
-              <div className="h-full min-h-[320px] overflow-y-auto">
-                <OrderPanel
-                  poolInfo={selectedPoolInfo || null}
-                  currentPrice={marketPrice?.midPrice || 0}
-                  selectedPriceFromOrderBook={selectedPriceFromOrderBook}
-                />
-              </div>
-            )}
-            {activeMobileTab === 'account' && (
-              <div className="h-full min-h-[280px]">
-                <AccountPanel poolName={selectedPool || ''} />
-              </div>
-            )}
-          </div>
+        {/* Mobile: Buy/Sell bar — fixed above bottom nav, opens trade drawer */}
+        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t">
+          <button
+            onClick={() => {
+              setTradeDrawerSide('buy');
+              setTradeDrawerOpen(true);
+            }}
+            className="flex-1 py-3 rounded-lg font-semibold text-base bg-green-600 hover:bg-green-700 active:bg-green-800 text-white transition-colors touch-manipulation"
+          >
+            Buy
+          </button>
+          <button
+            onClick={() => {
+              setTradeDrawerSide('sell');
+              setTradeDrawerOpen(true);
+            }}
+            className="flex-1 py-3 rounded-lg font-semibold text-base bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-colors touch-manipulation"
+          >
+            Sell
+          </button>
         </div>
 
         {/* Desktop: Order Book (Fixed Width) */}
@@ -402,8 +365,40 @@ export function DeepBookTrading() {
         </div>
       </div>
 
-      {/* Footer Status Bar — compact on mobile */}
-      <div className="h-6 sm:h-7 border-t bg-background flex items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0">
+      {/* Mobile trade drawer — Order form + Order Book (Coinbase-style) */}
+      <BottomSheet
+        open={tradeDrawerOpen}
+        onClose={() => setTradeDrawerOpen(false)}
+        title={selectedPoolInfo ? `${selectedPoolInfo.baseCoin}-${selectedPoolInfo.quoteCoin}` : undefined}
+      >
+        <div className="flex flex-col gap-4 pb-6">
+          <div className="px-4">
+            <OrderPanel
+              poolInfo={selectedPoolInfo || null}
+              currentPrice={marketPrice?.midPrice || 0}
+              selectedPriceFromOrderBook={selectedPriceFromOrderBook}
+              initialSide={tradeDrawerSide}
+            />
+          </div>
+          <div className="border-t pt-4">
+            <h4 className="px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+              Order Book
+            </h4>
+            <div className="min-h-[200px] overflow-auto">
+              <OrderBook
+                poolName={selectedPool || ''}
+                network={network}
+                onSelectPrice={(price) => {
+                  setSelectedPriceFromOrderBook(price);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* Footer Status Bar — hidden on mobile for more chart space */}
+      <div className="hidden sm:flex h-6 sm:h-7 border-t bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <div className="flex items-center gap-1 shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
