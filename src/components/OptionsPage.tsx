@@ -4,6 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { ConnectButton } from "@mysten/dapp-kit-react";
 import { toast } from "sonner";
+import { BottomSheet } from "./ui/bottom-sheet";
 import { VARUNA_CALL_OPTIONS_PACKAGE_ID, VARUNA_PUT_OPTIONS_PACKAGE_ID } from "../constants";
 import { getAllPools, createPermissionlessPool, POOL_CREATION_FEE_DEEP, DEEP_COIN_TYPE } from "../lib/deepbook";
 import { OptionsChain, type OptionPool } from "./OptionsChain";
@@ -698,8 +699,8 @@ export function OptionsPage() {
                     )}
                 </div>
 
-                {/* Action Panel (right) — wrapper ensures border extends full height */}
-                <div className="flex flex-col min-h-0 border-l border-border lg:w-[320px] xl:w-[400px] shrink-0">
+                {/* Action Panel (right) — desktop only; mobile uses bottom sheet */}
+                <div className="hidden lg:flex flex-col min-h-0 border-l border-border lg:w-[320px] xl:w-[400px] shrink-0">
                     <OptionsActionPanel
                         selectedOption={selectedOption}
                         currentAccount={currentAccount}
@@ -729,6 +730,42 @@ export function OptionsPage() {
                     />
                 </div>
             </div>
+
+            {/* Mobile bottom sheet: shows when option selected */}
+            <BottomSheet
+                open={!!selectedOption}
+                onClose={() => setSelectedOption(null)}
+            >
+                <div className="px-4 pb-6">
+                    <OptionsActionPanel
+                        selectedOption={selectedOption}
+                        currentAccount={currentAccount}
+                        collateralAmount={selectedOption ? (collateralAmounts[selectedOption.id] ?? "") : ""}
+                        onCollateralChange={(v) =>
+                            selectedOption && setCollateralAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                        }
+                        exerciseAmount={selectedOption ? (exerciseAmounts[selectedOption.id] ?? "") : ""}
+                        onExerciseAmountChange={(v) =>
+                            selectedOption && setExerciseAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                        }
+                        onMint={handleMintOptions}
+                        onExercise={handleExerciseOptions}
+                        onUpdatePrice={handleUpdatePrice}
+                        isMinting={selectedOption ? mintingPool === selectedOption.id : false}
+                        isExercising={selectedOption ? exercisingPool === selectedOption.id : false}
+                        isUpdatingPrice={selectedOption ? updatingPricePool === selectedOption.id : false}
+                        hasDeepbookPool={selectedOption ? deepbookPools.has(selectedOption.deepbookPoolName) : false}
+                        userBalance={selectedOption ? userTokenBalances[selectedOption.id] : undefined}
+                        formatDate={formatDate}
+                        isExpired={isExpired}
+                        createPoolForm={createPoolForm}
+                        onCreatePoolFormChange={setCreatePoolForm}
+                        onCreatePool={handleCreatePermissionlessPool}
+                        creatingPool={creatingPool}
+                        publishedOptions={PUBLISHED_OPTIONS}
+                    />
+                </div>
+            </BottomSheet>
         </div>
     );
 }

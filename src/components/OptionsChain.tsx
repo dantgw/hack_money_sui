@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface OptionPool {
@@ -82,48 +82,56 @@ export function OptionsChain({
 
     return (
         <div className="flex flex-col h-full bg-background text-[11px] sm:text-[12px] overflow-hidden">
-            {/* Header: Calls | Pool + Expiration | Puts */}
+            {/* Header: on mobile, pool + expiry only; on desktop, Calls | Pool + Expiration | Puts */}
             <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-3 shrink-0">
-                <div className="flex items-center gap-2">
+                {/* Calls label — hidden on mobile (duplicated in section headers) */}
+                <div className="hidden lg:flex items-center gap-2">
                     <span className="font-semibold text-green-600 dark:text-green-400">Calls</span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+                <div className="flex-1 flex flex-col sm:flex-row gap-3 min-w-0 lg:flex-initial lg:flex-wrap justify-center">
                     {pools.length > 0 && (
-                        <select
-                            value={effectivePool ?? ""}
-                            onChange={(e) => {
-                                setActivePool(e.target.value || null);
-                                setActiveExpiration(null);
-                                onSelectOption(null);
-                            }}
-                            className="bg-background border rounded px-3 py-1.5 text-sm font-medium focus:ring-1 focus:ring-primary outline-none"
-                        >
-                            {pools.map(([key, opt]) => (
-                                <option key={key} value={key}>
-                                    {opt.baseAsset}/{opt.quoteAsset} ({opt.deepbookPoolName})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative min-w-0">
+                            <select
+                                value={effectivePool ?? ""}
+                                onChange={(e) => {
+                                    setActivePool(e.target.value || null);
+                                    setActiveExpiration(null);
+                                    onSelectOption(null);
+                                }}
+                                className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-background border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
+                            >
+                                {pools.map(([key, opt]) => (
+                                    <option key={key} value={key}>
+                                        {opt.baseAsset}/{opt.quoteAsset} ({opt.deepbookPoolName})
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                        </div>
                     )}
-                    <select
-                        value={effectiveExpiration ?? ""}
-                        onChange={(e) => setActiveExpiration(Number(e.target.value) || null)}
-                        className="bg-background border rounded px-3 py-1.5 text-sm font-medium focus:ring-1 focus:ring-primary outline-none"
-                    >
-                        {expirations.map((exp) => {
-                            const days = Math.ceil((exp - Date.now()) / 86400000);
-                            return (
-                                <option key={exp} value={exp}>
-                                    {formatDate(exp)} ({days > 0 ? `${days} days` : "0 days"})
-                                </option>
-                            );
-                        })}
-                    </select>
+                    <div className="relative min-w-0">
+                        <select
+                            value={effectiveExpiration ?? ""}
+                            onChange={(e) => setActiveExpiration(Number(e.target.value) || null)}
+                            className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-background border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
+                        >
+                            {expirations.map((exp) => {
+                                const days = Math.ceil((exp - Date.now()) / 86400000);
+                                return (
+                                    <option key={exp} value={exp}>
+                                        {formatDate(exp)} ({days > 0 ? `${days} days` : "0 days"})
+                                    </option>
+                                );
+                            })}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Puts label — hidden on mobile (duplicated in section headers) */}
+                <div className="hidden lg:flex items-center gap-2">
                     <ChevronLeft className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold text-red-600 dark:text-red-400">Puts</span>
                 </div>
@@ -132,7 +140,100 @@ export function OptionsChain({
             {/* Options chain table */}
             {strikes.length > 0 ? (
                 <div className="flex-1 overflow-auto min-h-0">
-                    <table className="w-full border-collapse">
+                    {/* Mobile: vertical split — Calls above, Puts below */}
+                    <div className="lg:hidden space-y-4 p-2">
+                        <div>
+                            <div className="text-green-600 dark:text-green-400 font-semibold text-xs px-2 py-1.5 border-b">
+                                Calls
+                            </div>
+                            <table className="w-full border-collapse [&_td]:border-0 [&_th]:border-0">
+                                <thead>
+                                    <tr>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Strike</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Bid</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Ask</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Last</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {strikes.map((strike) => {
+                                        const call = getCallForStrike(strike);
+                                        const isRowSelected = call && selectedOption?.id === call.id;
+                                        return (
+                                            <tr
+                                                key={`call-${strike}`}
+                                                onClick={() => call && onSelectOption(call)}
+                                                className={cn(
+                                                    "border-b border-border/50 hover:bg-muted/30 transition-colors",
+                                                    call && "cursor-pointer",
+                                                    isRowSelected && "bg-primary/15"
+                                                )}
+                                            >
+                                                <td className="py-2 px-2 font-medium">{formatStrike(strike)}</td>
+                                                <CallPutCells
+                                                    option={call}
+                                                    isCall
+                                                    selectedOption={selectedOption}
+                                                    onSelect={onSelectOption}
+                                                    userBalance={call ? userTokenBalances[call.id] : undefined}
+                                                    isExpired={call ? isExpired(call.expirationDate) : false}
+                                                    mobile
+                                                    selectionOnRow
+                                                />
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <div className="text-red-600 dark:text-red-400 font-semibold text-xs px-2 py-1.5 border-b">
+                                Puts
+                            </div>
+                            <table className="w-full border-collapse [&_td]:border-0 [&_th]:border-0">
+                                <thead>
+                                    <tr>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Strike</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Bid</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Ask</th>
+                                        <th className="text-left py-2 px-2 text-muted-foreground font-medium">Last</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {strikes.map((strike) => {
+                                        const put = getPutForStrike(strike);
+                                        const isRowSelected = put && selectedOption?.id === put.id;
+                                        return (
+                                            <tr
+                                                key={`put-${strike}`}
+                                                onClick={() => put && onSelectOption(put)}
+                                                className={cn(
+                                                    "border-b border-border/50 hover:bg-muted/30 transition-colors",
+                                                    put && "cursor-pointer",
+                                                    isRowSelected && "bg-primary/15"
+                                                )}
+                                            >
+                                                <td className="py-2 px-2 font-medium">{formatStrike(strike)}</td>
+                                                <CallPutCells
+                                                    option={put}
+                                                    isCall={false}
+                                                    selectedOption={selectedOption}
+                                                    onSelect={onSelectOption}
+                                                    userBalance={put ? userTokenBalances[put.id] : undefined}
+                                                    isExpired={put ? isExpired(put.expirationDate) : false}
+                                                    mobile
+                                                    selectionOnRow
+                                                />
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Desktop: horizontal layout */}
+                    <table className="hidden lg:table w-full border-collapse">
                         <thead className="sticky top-0 bg-background z-10 border-b">
                             <tr>
                                 <th className="text-left py-2 px-2 text-muted-foreground font-medium">Bid</th>
@@ -158,7 +259,6 @@ export function OptionsChain({
                                         key={strike}
                                         className="border-b border-border/50 hover:bg-muted/30 transition-colors"
                                     >
-                                        {/* Call columns */}
                                         <CallPutCells
                                             option={call}
                                             isCall
@@ -167,11 +267,9 @@ export function OptionsChain({
                                             userBalance={call ? userTokenBalances[call.id] : undefined}
                                             isExpired={call ? isExpired(call.expirationDate) : false}
                                         />
-                                        {/* Strike (center) */}
                                         <td className="py-2 px-3 text-center font-semibold bg-muted/20">
                                             {formatStrike(strike)}
                                         </td>
-                                        {/* Put columns */}
                                         <CallPutCells
                                             option={put}
                                             isCall={false}
@@ -205,6 +303,8 @@ function CallPutCells({
     onSelect,
     userBalance,
     isExpired,
+    mobile = false,
+    selectionOnRow = false,
 }: {
     option: OptionPool | undefined;
     isCall: boolean;
@@ -212,19 +312,24 @@ function CallPutCells({
     onSelect: (o: OptionPool) => void;
     userBalance?: string;
     isExpired: boolean;
+    mobile?: boolean;
+    selectionOnRow?: boolean;
 }) {
     const isSelected = option && selectedOption?.id === option.id;
     const cellClass = cn(
-        "py-2 px-2 cursor-pointer transition-colors",
-        isSelected && "bg-primary/15 ring-1 ring-primary/50",
+        "py-2 px-2 transition-colors",
+        !selectionOnRow && "cursor-pointer",
+        !selectionOnRow && isSelected && "bg-primary/15 ring-1 ring-primary/50",
+        selectionOnRow && "cursor-pointer",
         isExpired && option && "text-red-500"
     );
     const alignClass = isCall ? "text-left" : "text-right";
+    const colCount = mobile ? 3 : 5;
 
     if (!option) {
         return (
             <>
-                {Array.from({ length: 5 }).map((_, i) => (
+                {Array.from({ length: colCount }).map((_, i) => (
                     <td key={i} className={cn("py-2 px-2 text-muted-foreground/50", alignClass)}>
                         {PLACEHOLDER}
                     </td>
@@ -233,7 +338,17 @@ function CallPutCells({
         );
     }
 
-    const handleClick = () => onSelect(option);
+    const handleClick = selectionOnRow ? undefined : () => onSelect(option);
+
+    if (mobile) {
+        return (
+            <>
+                <td onClick={handleClick} className={cn(cellClass, alignClass)}>{PLACEHOLDER}</td>
+                <td onClick={handleClick} className={cn(cellClass, alignClass)}>{PLACEHOLDER}</td>
+                <td onClick={handleClick} className={cn(cellClass, alignClass)}>{userBalance ?? PLACEHOLDER}</td>
+            </>
+        );
+    }
 
     return (
         <>
