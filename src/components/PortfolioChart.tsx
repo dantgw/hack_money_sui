@@ -27,11 +27,7 @@ function generateSimulatedData(
   let pointCount: number;
 
   switch (timeframe) {
-    case "1D":
-      startTime = now - 24 * 60 * 60 * 1000;
-      stepMs = 15 * 60 * 1000; // 15 min
-      pointCount = 96;
-      break;
+
     case "1W":
       startTime = now - 7 * 24 * 60 * 60 * 1000;
       stepMs = 2 * 60 * 60 * 1000; // 2 hours
@@ -107,9 +103,9 @@ export function PortfolioChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
-  const [timeframe, setTimeframe] = useState<PortfolioTimeframe>("1D");
+  const [timeframe, setTimeframe] = useState<PortfolioTimeframe>("ALL");
   const [chartData, setChartData] = useState(() =>
-    generateSimulatedData("1D", totalValue)
+    generateSimulatedData("ALL", totalValue)
   );
 
   useEffect(() => {

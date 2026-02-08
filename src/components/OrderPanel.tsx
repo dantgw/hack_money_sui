@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCurrentAccount, ConnectButton, useCurrentClient, useDAppKit, useCurrentNetwork } from '@mysten/dapp-kit-react';
 import { Transaction } from '@mysten/sui/transactions';
 import { Button } from './ui/button';
@@ -109,99 +109,90 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
         if (initialSide) setSide(initialSide);
     }, [initialSide]);
 
-    // Fetch BalanceManager when account changes
-    useEffect(() => {
-        const fetchBalanceManager = async () => {
-            if (!currentAccount?.address) {
-                setBalanceManager(null);
-                return;
-            }
+    // Fetch BalanceManager when account/pool/network changes. No polling — balance only updates on transaction.
+    const fetchBalanceManager = useCallback(async () => {
+        if (!currentAccount?.address) {
+            setBalanceManager(null);
+            return;
+        }
 
-            setIsLoadingBalanceManager(true);
-            try {
-                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
-                const bm = await getBalanceManager(client, currentAccount.address, network);
+        setIsLoadingBalanceManager(true);
+        try {
+            const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
+            const bm = await getBalanceManager(client, currentAccount.address, network);
 
-                let suiBalance = 0;
-                if (bm) {
-                    // SUI balance (always available for deposit / withdraw UI)
-                    suiBalance = Number(
-                        await getBalanceForCoin(
+            let suiBalance = 0;
+            if (bm) {
+                // SUI balance (always available for deposit / withdraw UI)
+                suiBalance = Number(
+                    await getBalanceForCoin(
+                        client,
+                        currentAccount.address,
+                        bm,
+                        '0x2::sui::SUI',
+                        network,
+                    ),
+                ) / 1_000_000_000;
+
+                // Pool-specific balances for Available display
+                if (poolInfo && (currentNetwork === 'mainnet' || currentNetwork === 'testnet')) {
+                    const networkKey = currentNetwork as 'mainnet' | 'testnet';
+                    const baseType = COIN_TYPE_MAP[networkKey]?.[poolInfo.baseCoin];
+                    const quoteType = COIN_TYPE_MAP[networkKey]?.[poolInfo.quoteCoin];
+
+                    if (baseType) {
+                        const rawBase = await getBalanceForCoin(
                             client,
                             currentAccount.address,
                             bm,
-                            '0x2::sui::SUI',
+                            baseType,
                             network,
-                        ),
-                    ) / 1_000_000_000;
-
-                    // Pool-specific balances for Available display
-                    if (poolInfo && (currentNetwork === 'mainnet' || currentNetwork === 'testnet')) {
-                        const networkKey = currentNetwork as 'mainnet' | 'testnet';
-                        const baseType = COIN_TYPE_MAP[networkKey]?.[poolInfo.baseCoin];
-                        const quoteType = COIN_TYPE_MAP[networkKey]?.[poolInfo.quoteCoin];
-
-                        if (baseType) {
-                            const rawBase = await getBalanceForCoin(
-                                client,
-                                currentAccount.address,
-                                bm,
-                                baseType,
-                                network,
-                            );
-                            console.log("rawBase:", rawBase);
-                            console.log("poolInfo.baseAssetDecimals:", poolInfo.baseAssetDecimals);
-                            console.log("Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals):", Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals));
-                            setBaseBalance(
-                                Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals),
-                            );
-                        } else {
-                            setBaseBalance(null);
-                        }
-
-                        if (quoteType) {
-                            const rawQuote = await getBalanceForCoin(
-                                client,
-                                currentAccount.address,
-                                bm,
-                                quoteType,
-                                network,
-                            );
-                            console.log("rawQuote:", rawQuote);
-                            console.log("poolInfo.quoteAssetDecimals:", poolInfo.quoteAssetDecimals);
-                            console.log("Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals):", Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals));
-                            setQuoteBalance(
-                                Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals),
-                            );
-                        } else {
-                            setQuoteBalance(null);
-                        }
+                        );
+                        setBaseBalance(
+                            Number(rawBase) / Math.pow(10, poolInfo.baseAssetDecimals),
+                        );
                     } else {
                         setBaseBalance(null);
+                    }
+
+                    if (quoteType) {
+                        const rawQuote = await getBalanceForCoin(
+                            client,
+                            currentAccount.address,
+                            bm,
+                            quoteType,
+                            network,
+                        );
+                        setQuoteBalance(
+                            Number(rawQuote) / Math.pow(10, poolInfo.quoteAssetDecimals),
+                        );
+                    } else {
                         setQuoteBalance(null);
                     }
                 } else {
                     setBaseBalance(null);
                     setQuoteBalance(null);
                 }
-
-                setBalanceManager(bm);
-                setBalance(suiBalance);
-            } catch (error) {
-                console.error('Error fetching BalanceManager:', error);
-                setBalanceManager(null);
+            } else {
                 setBaseBalance(null);
                 setQuoteBalance(null);
-            } finally {
-                setIsLoadingBalanceManager(false);
             }
-        };
 
-        fetchBalanceManager();
-        // Refresh every 10 seconds
-        const interval = setInterval(fetchBalanceManager, 10000);
-        return () => clearInterval(interval);
+            setBalanceManager(bm);
+            setBalance(suiBalance);
+        } catch (error) {
+            console.error('Error fetching BalanceManager:', error);
+            setBalanceManager(null);
+            setBaseBalance(null);
+            setQuoteBalance(null);
+        } finally {
+            setIsLoadingBalanceManager(false);
+        }
     }, [currentAccount?.address, client, currentNetwork, poolInfo]);
+
+    useEffect(() => {
+        fetchBalanceManager();
+    }, [fetchBalanceManager]);
 
     // Handle deposit with BalanceManager creation if needed
     const handleDeposit = async () => {
@@ -283,12 +274,8 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                 description: `${depositAmount} SUI has been deposited to your BalanceManager`,
             });
 
-            // Refresh BalanceManager
-            setTimeout(async () => {
-                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
-                const bm = await getBalanceManager(client, currentAccount.address, network);
-                setBalanceManager(bm);
-            }, 2000);
+            // Refresh balance after transaction confirms
+            setTimeout(() => fetchBalanceManager(), 2000);
             return true;
         } catch (error) {
             console.error('Deposit failed:', error);
@@ -340,12 +327,8 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                 description: `${withdrawAmount} SUI has been withdrawn from your BalanceManager`,
             });
 
-            // Refresh BalanceManager
-            setTimeout(async () => {
-                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
-                const bm = await getBalanceManager(client, currentAccount.address, network);
-                setBalanceManager(bm);
-            }, 2000);
+            // Refresh balance after transaction confirms
+            setTimeout(() => fetchBalanceManager(), 2000);
             return true;
         } catch (error) {
             console.error('Withdrawal failed:', error);
@@ -511,16 +494,8 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                 setPrice(currentPrice.toString());
             }
 
-            // Refresh BalanceManager to update balances
-            setTimeout(async () => {
-                const network = currentNetwork as 'mainnet' | 'testnet' | 'devnet';
-                const bm = await getBalanceManager(client, currentAccount.address, network);
-                if (bm) {
-                    const balance = Number(await getBalanceForCoin(client, currentAccount.address, bm, '0x2::sui::SUI', network)) / 1_000_000_000;
-                    setBalance(balance);
-                }
-                setBalanceManager(bm);
-            }, 2000);
+            // Refresh balance after transaction confirms
+            setTimeout(() => fetchBalanceManager(), 2000);
         } catch (error) {
             console.error('Order placement failed:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';

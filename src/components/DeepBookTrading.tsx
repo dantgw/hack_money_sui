@@ -16,11 +16,11 @@ import usdcLogo from '../assets/usdc-logo.png';
 import walrusLogo from '../assets/walrus-logo.webp';
 
 const ASSET_LOGOS: Record<string, string> = {
-    DEEP: deepLogo,
-    SUI: suiLogo,
-    USDC: usdcLogo,
-    WAL: walrusLogo,
-    WALRUS: walrusLogo,
+  DEEP: deepLogo,
+  SUI: suiLogo,
+  USDC: usdcLogo,
+  WAL: walrusLogo,
+  WALRUS: walrusLogo,
 };
 import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
@@ -118,17 +118,29 @@ export function DeepBookTrading() {
     });
   }, []);
 
+  // Clear chart data when network changes so we don't show stale data from the previous network
+  useEffect(() => {
+    setChartData([]);
+    setMarketPrice(null);
+    setError(null);
+  }, [network]);
+
   useEffect(() => {
     if (!selectedPool) return;
 
+    const abortController = new AbortController();
     const loadPoolData = async () => {
+      const poolForFetch = selectedPool;
+      const networkForFetch = network;
       try {
         setError(null);
 
         // Load OHLCV data for the chart
         const limit = 500;
-        const ohlcvData = await getOHLCVData(selectedPool, interval, limit, undefined, undefined, network);
-        // console.log(`[DeepBook] Requested ${limit} ${interval} candles, received ${ohlcvData.length}`);
+        const ohlcvData = await getOHLCVData(poolForFetch, interval, limit, undefined, undefined, networkForFetch);
+
+        // Ignore response if effect was cleaned up (network/pool changed)
+        if (abortController.signal.aborted) return;
 
         if (ohlcvData.length > 0) {
           setChartData(ohlcvData);
@@ -138,7 +150,9 @@ export function DeepBookTrading() {
         }
 
         // Fetch recent trades to update price
-        const recentTrades = await getRecentTrades(selectedPool, network, 1);
+        const recentTrades = await getRecentTrades(poolForFetch, networkForFetch, 1);
+        if (abortController.signal.aborted) return;
+
         if (recentTrades.length > 0) {
           updatePriceFromTrades(recentTrades);
         } else {
@@ -146,6 +160,7 @@ export function DeepBookTrading() {
           setMarketPrice(null);
         }
       } catch (error) {
+        if (abortController.signal.aborted) return;
         console.error('Error loading pool data:', error);
         setError(error instanceof Error ? error.message : 'Failed to load pool data');
       }
@@ -153,7 +168,10 @@ export function DeepBookTrading() {
 
     loadPoolData();
     const refreshTimer = window.setInterval(loadPoolData, 15000);
-    return () => window.clearInterval(refreshTimer);
+    return () => {
+      abortController.abort();
+      window.clearInterval(refreshTimer);
+    };
   }, [selectedPool, network, interval, updatePriceFromTrades]);
 
   // Update live price from recent trades (more frequently)
