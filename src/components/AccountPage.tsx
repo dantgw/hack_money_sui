@@ -1,13 +1,70 @@
-import { ConnectButton, useCurrentAccount, useCurrentNetwork, useDAppKit } from "@mysten/dapp-kit-react";
+import { useEffect, useState } from "react";
+import { ConnectButton, useCurrentAccount, useCurrentClient, useCurrentNetwork, useDAppKit } from "@mysten/dapp-kit-react";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { NETWORK_STORAGE_KEY } from "../dApp-kit";
-import { Wallet, Wifi, ChevronRight } from "lucide-react";
+import { Wallet, Wifi, ChevronRight, TrendingUp, TrendingDown, Copy } from "lucide-react";
+import { PortfolioChart } from "./PortfolioChart";
+import { AnimatedNumber } from "./AnimatedNumber";
+import { getBalanceManager, getBalanceForCoin } from "../lib/deepbook";
+import { toast } from "sonner";
+
+// Simulated portfolio metrics for demo (no real trading history)
+const SIMULATED_PORTFOLIO = {
+  totalValue: 8033.51,
+  dailyChange: 11.63,
+  dailyChangePercent: 0.14,
+  buyingPower: 7011.36,
+};
 
 export function AccountPage() {
   const currentAccount = useCurrentAccount();
   const currentNetwork = useCurrentNetwork();
   const dAppKit = useDAppKit();
+  const client = useCurrentClient();
+
+  const [balanceManager, setBalanceManager] = useState<string | null>(null);
+  const [balanceManagerBalance, setBalanceManagerBalance] = useState<number | null>(null);
+  const [isLoadingBalanceManager, setIsLoadingBalanceManager] = useState(false);
+
+  useEffect(() => {
+    const fetchBalanceManager = async () => {
+      if (!currentAccount?.address) {
+        setBalanceManager(null);
+        setBalanceManagerBalance(null);
+        return;
+      }
+
+      setIsLoadingBalanceManager(true);
+      try {
+        const network = currentNetwork as "mainnet" | "testnet" | "devnet";
+        const bm = await getBalanceManager(client, currentAccount.address, network);
+
+        if (bm) {
+          const rawBalance = await getBalanceForCoin(
+            client,
+            currentAccount.address,
+            bm,
+            "0x2::sui::SUI",
+            network,
+          );
+          setBalanceManager(bm);
+          setBalanceManagerBalance(Number(rawBalance) / 1_000_000_000);
+        } else {
+          setBalanceManager(null);
+          setBalanceManagerBalance(null);
+        }
+      } catch (error) {
+        console.error("Error fetching BalanceManager:", error);
+        setBalanceManager(null);
+        setBalanceManagerBalance(null);
+      } finally {
+        setIsLoadingBalanceManager(false);
+      }
+    };
+
+    fetchBalanceManager();
+  }, [currentAccount?.address, client, currentNetwork]);
 
   const toggleNetwork = () => {
     const newNetwork = currentNetwork === "mainnet" ? "testnet" : "mainnet";
@@ -15,65 +72,149 @@ export function AccountPage() {
     dAppKit.switchNetwork(newNetwork);
   };
 
+  const { totalValue, dailyChange, dailyChangePercent } = SIMULATED_PORTFOLIO;
+  const isPositive = dailyChange >= 0;
+
   return (
     <div className="flex flex-col h-full overflow-auto bg-background">
       <div className="p-4 sm:p-6 space-y-6 max-w-xl mx-auto w-full">
-        <div>
-          <h2 className="text-xl font-semibold">Account</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your wallet and network settings
-          </p>
+        {/* Hero: Account value + daily change (Robinhood-style) */}
+        <div className="pt-2">
+          <h2 className="text-xl font-semibold animate-count-up opacity-0 [animation-fill-mode:forwards]">Simulated Account</h2>
+
+
+          <div className="mt-6 animate-count-up opacity-0 [animation-fill-mode:forwards] [animation-delay:200ms]">
+            <div className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums">
+              <AnimatedNumber value={totalValue} prefix="$" duration={1000} />
+            </div>
+            <div
+              className={`mt-1 flex items-center gap-1 text-sm font-medium ${isPositive ? "text-emerald-500" : "text-red-500"
+                }`}
+            >
+              {isPositive ? (
+                <TrendingUp className="h-4 w-4" />
+              ) : (
+                <TrendingDown className="h-4 w-4" />
+              )}
+              <span>
+                <AnimatedNumber
+                  value={dailyChange}
+                  prefix={isPositive ? "▲ $" : "▼ $"}
+                  decimals={2}
+                  duration={800}
+                />
+                {" "}(<AnimatedNumber value={dailyChangePercent} suffix="%)" decimals={2} duration={800} />
+                {" "}Today
+              </span>
+            </div>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Wallet
-            </CardTitle>
-            <CardDescription>
-              Connect your wallet to trade on Varuna
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="[&>button]:w-full [&>button]:justify-center [&>button]:min-h-[48px]">
-              <ConnectButton />
+        {/* Trading history graph with timeframe selector */}
+        <Card className="overflow-hidden border-0 bg-card/50">
+          <CardContent className="pt-6">
+            <PortfolioChart
+              totalValue={totalValue}
+              dailyChange={dailyChange}
+              dailyChangePercent={dailyChangePercent}
+            />
+          </CardContent>
+        </Card>
+
+
+        {/* Settings: compact list instead of cards */}
+        <div className="pt-2">
+          <h3 className="text-sm font-medium text-muted-foreground px-1 mb-3">Settings</h3>
+
+          <div className="rounded-xl border bg-card/30 ">
+            {/* Wallet */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+              <div className="flex items-center gap-3 min-w-0">
+                <Wallet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <div className="text-sm font-medium">Wallet</div>
+                  <div className="text-xs text-muted-foreground">Connect to trade on Varuna</div>
+                </div>
+              </div>
+              <div className="shrink-0 scale-90 origin-right">
+                <ConnectButton>Connect</ConnectButton>
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wifi className="h-4 w-4" />
-              Network
-            </CardTitle>
-            <CardDescription>
-              Switch between Mainnet and Testnet
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              className="w-full justify-between min-h-[48px]"
-              onClick={toggleNetwork}
-            >
-              <span>{currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+            {/* BalanceManager address & balance (when connected) */}
+            {currentAccount && (
+              <div className="px-4 py-3 border-b border-border/50 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium shrink-0">BalanceManager</span>
+                  {isLoadingBalanceManager ? (
+                    <span className="text-xs text-muted-foreground">Loading…</span>
+                  ) : balanceManager ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(balanceManager);
+                        toast.success("BalanceManager address copied");
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copy address"
+                    >
+                      {balanceManager.slice(0, 8)}…{balanceManager.slice(-6)}
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">None yet — deposit to create</span>
+                  )}
+                </div>
+                {balanceManager && balanceManagerBalance !== null && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">SUI balance</span>
+                    <span className="text-sm font-medium tabular-nums">
+                      {balanceManagerBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })} SUI
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
-        {currentAccount && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Connected</CardTitle>
-              <CardDescription className="font-mono text-xs break-all">
+            {/* Network */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <Wifi className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <div className="text-sm font-medium">Network</div>
+                  <div className="text-xs text-muted-foreground">Mainnet or Testnet</div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 gap-1"
+                onClick={toggleNetwork}
+              >
+                {currentNetwork === "mainnet" ? "Mainnet" : "Testnet"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {currentAccount && (
+            <div className="mt-3 px-4 py-2 rounded-lg bg-muted/30">
+              <div className="text-xs text-muted-foreground mb-1">Connected wallet</div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(currentAccount.address);
+                  toast.success("Wallet address copied");
+                }}
+                className="font-mono text-xs break-all text-left hover:text-foreground transition-colors flex items-center gap-1.5"
+                title="Copy address"
+              >
                 {currentAccount.address}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+                <Copy className="h-3 w-3 shrink-0" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

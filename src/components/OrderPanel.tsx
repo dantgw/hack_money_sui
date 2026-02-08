@@ -533,144 +533,166 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
         }
     };
 
+    const needsDeposit = compact && currentAccount && !isLoadingBalanceManager && (!balanceManager || (balance ?? 0) === 0);
+
     return (
         <div className="flex flex-col h-full justify-between bg-background overflow-y-auto">
 
             {/* Trading Section */}
-            <div className={cn(compact ? "px-4 py-3 space-y-3" : "p-4 sm:p-4 space-y-4")}>
-                {compact ? (
-                    /* Compact: Buy/Sell + Order type dropdown on same row */
-                    <div className="flex gap-2 items-stretch">
-                        <div className="flex flex-1 min-w-0 h-[44px] rounded-md bg-muted p-1">
-                            <button
-                                onClick={() => setSide('buy')}
-                                className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
-                            >
-                                Buy
-                            </button>
-                            <button
-                                onClick={() => setSide('sell')}
-                                className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
-                            >
-                                Sell
-                            </button>
-                        </div>
-                        <div className="relative shrink-0">
-                            <select
-                                value={orderType}
-                                onChange={(e) => setOrderType(e.target.value as 'market' | 'limit')}
-                                className="h-[44px] pl-3 pr-9 rounded-md bg-muted border border-border text-sm font-medium appearance-none cursor-pointer focus:ring-1 focus:ring-primary outline-none min-w-[100px]"
-                            >
-                                <option value="market">Market</option>
-                                <option value="limit">Limit</option>
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        </div>
-                    </div>
-                ) : (
-                    /* Desktop: Order type tabs then Buy/Sell */
-                    <>
-                        <div className="flex w-full text-xs border-b border-muted">
-                            <button
-                                onClick={() => setOrderType('market')}
-                                className={cn("flex-1 py-2 font-medium transition-colors border-b-2", orderType === 'market' ? '!border-primary text-primary -mb-[4px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
-                            >
-                                Market
-                            </button>
-                            <button
-                                onClick={() => setOrderType('limit')}
-                                className={cn("flex-1 py-2 font-medium transition-colors border-b-2", orderType === 'limit' ? '!border-primary text-primary -mb-[4px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
-                            >
-                                Limit
-                            </button>
-                        </div>
-                        <div className="flex rounded-md bg-muted p-1">
-                            <button
-                                onClick={() => setSide('buy')}
-                                className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
-                            >
-                                Buy
-                            </button>
-                            <button
-                                onClick={() => setSide('sell')}
-                                className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
-                            >
-                                Sell
-                            </button>
-                        </div>
-                    </>
-                )}
-                <div className={cn("space-y-4 pt-2", compact && "pt-0 space-y-3")}>
-                    {orderType === 'limit' && (
-                        <div className="space-y-1.5">
-                            <label className="text-xs text-muted-foreground uppercase font-bold">Price ({quoteSymbol})</label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    className="w-full bg-muted/50 border rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                                    placeholder="0.0000"
-                                />
+            <div className={cn("relative min-h-[180px]", compact ? "px-4 py-3 space-y-3" : "p-4 sm:p-4 space-y-4")}>
+                <div className={cn("transition-all duration-200", needsDeposit && "blur-sm pointer-events-none select-none")}>
+                    {compact ? (
+                        /* Compact: Buy/Sell + Order type dropdown on same row */
+                        <div className="flex gap-2 items-stretch">
+                            <div className="flex flex-1 min-w-0 h-[44px] rounded-md bg-muted p-1">
                                 <button
-                                    onClick={() => setPrice(currentPrice.toString())}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-primary hover:underline"
+                                    onClick={() => setSide('buy')}
+                                    className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                >
+                                    Buy
+                                </button>
+                                <button
+                                    onClick={() => setSide('sell')}
+                                    className={cn("flex-1 min-h-0 h-full text-sm font-medium rounded-sm transition-all touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                >
+                                    Sell
+                                </button>
+                            </div>
+                            <div className="relative shrink-0">
+                                <select
+                                    value={orderType}
+                                    onChange={(e) => setOrderType(e.target.value as 'market' | 'limit')}
+                                    className="h-[44px] pl-3 pr-9 rounded-md bg-muted border border-border text-sm font-medium appearance-none cursor-pointer focus:ring-1 focus:ring-primary outline-none min-w-[100px]"
+                                >
+                                    <option value="market">Market</option>
+                                    <option value="limit">Limit</option>
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+                    ) : (
+                        /* Desktop: Order type tabs then Buy/Sell */
+                        <>
+                            <div className="flex w-full text-xs border-b border-muted">
+                                <button
+                                    onClick={() => setOrderType('market')}
+                                    className={cn("flex-1 py-2 font-medium transition-colors border-b-2", orderType === 'market' ? '!border-primary text-primary -mb-[4px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
                                 >
                                     Market
                                 </button>
+                                <button
+                                    onClick={() => setOrderType('limit')}
+                                    className={cn("flex-1 py-2 font-medium transition-colors border-b-2", orderType === 'limit' ? '!border-primary text-primary -mb-[4px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
+                                >
+                                    Limit
+                                </button>
+                            </div>
+                            <div className="flex rounded-md bg-muted p-1">
+                                <button
+                                    onClick={() => setSide('buy')}
+                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-green-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                >
+                                    Buy
+                                </button>
+                                <button
+                                    onClick={() => setSide('sell')}
+                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-medium rounded-sm transition-all min-h-[44px] touch-manipulation", side === 'sell' ? 'bg-red-500 text-white shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                >
+                                    Sell
+                                </button>
+                            </div>
+                        </>
+                    )}
+                    <div className={cn("space-y-4 pt-2", compact && "pt-0 space-y-3")}>
+                        {orderType === 'limit' && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs text-muted-foreground uppercase font-bold">Price ({quoteSymbol})</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        className="w-full bg-muted/50 border rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        placeholder="0.0000"
+                                    />
+                                    <button
+                                        onClick={() => setPrice(currentPrice.toString())}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-primary hover:underline"
+                                    >
+                                        Market
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-muted-foreground uppercase font-bold">Size ({baseSymbol})</label>
+                            <input
+                                type="number"
+                                min={10}
+                                value={size}
+                                onChange={(e) => setSize(e.target.value)}
+                                className="w-full bg-muted/50 border rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                placeholder="0.00"
+                            />
+                        </div>
+
+
+                        <div className="pt-4 space-y-2">
+                            <div className="flex justify-between text-[11px] text-muted-foreground">
+                                <span>Available</span>
+                                <span>
+                                    {(
+                                        side === 'buy'
+                                            ? quoteBalance ?? 0
+                                            : baseBalance ?? 0
+                                    ).toFixed(4)}{' '}
+                                    {side === 'buy' ? quoteSymbol : baseSymbol}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-[11px] text-muted-foreground">
+                                <span>Order Value</span>
+                                <span>{(parseFloat(price || '0') * parseFloat(size || '0')).toFixed(2)} {quoteSymbol}</span>
                             </div>
                         </div>
-                    )}
 
-                    <div className="space-y-1.5">
-                        <label className="text-xs text-muted-foreground uppercase font-bold">Size ({baseSymbol})</label>
-                        <input
-                            type="number"
-                            min={10}
-                            value={size}
-                            onChange={(e) => setSize(e.target.value)}
-                            className="w-full bg-muted/50 border rounded-md p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                            placeholder="0.00"
-                        />
+                        {currentAccount ? (
+                            <Button
+                                onClick={handlePlaceOrder}
+                                disabled={isPlacingOrder || !poolInfo || !balanceManager || !size || (orderType === 'limit' && !price)}
+                                className={`w-full font-bold uppercase min-h-[44px] touch-manipulation py-3 sm:py-2 ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            >
+                                {isPlacingOrder ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} `
+                                )}
+                            </Button>
+                        ) : (
+                            <div className="w-full [&>button]:w-full [&>button]:font-bold [&>button]:uppercase">
+                                <ConnectButton />
+                            </div>
+                        )}
                     </div>
-
-
-                    <div className="pt-4 space-y-2">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                            <span>Available</span>
-                            <span>
-                                {(
-                                    side === 'buy'
-                                        ? quoteBalance ?? 0
-                                        : baseBalance ?? 0
-                                ).toFixed(4)}{' '}
-                                {side === 'buy' ? quoteSymbol : baseSymbol}
-                            </span>
-                        </div>
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                            <span>Order Value</span>
-                            <span>{(parseFloat(price || '0') * parseFloat(size || '0')).toFixed(2)} {quoteSymbol}</span>
-                        </div>
-                    </div>
-
-                    {currentAccount ? (
+                </div>
+                {needsDeposit && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+                        <p className="text-sm text-muted-foreground text-center">
+                            Deposit SUI to fund your balance and start trading
+                        </p>
                         <Button
-                            onClick={handlePlaceOrder}
-                            disabled={isPlacingOrder || !poolInfo || !balanceManager || !size || (orderType === 'limit' && !price)}
-                            className={`w-full font-bold uppercase min-h-[44px] touch-manipulation py-3 sm:py-2 ${side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            onClick={() => setIsDepositModalOpen(true)}
+                            disabled={isDepositing}
+                            className="min-h-[48px] px-8 text-base font-semibold"
                         >
-                            {isPlacingOrder ? (
+                            {isDepositing ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                                `${side === 'buy' ? 'Buy / Long' : 'Sell / Short'} `
+                                'Deposit'
                             )}
                         </Button>
-                    ) : (
-                        <div className="w-full [&>button]:w-full [&>button]:font-bold [&>button]:uppercase">
-                            <ConnectButton />
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* BalanceManager Section */}

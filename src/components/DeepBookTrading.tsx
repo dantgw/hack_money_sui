@@ -28,7 +28,7 @@ import { AccountPanel } from './AccountPanel';
 import { TradingHeader } from './TradingHeader';
 import { PoolSelectorPopup } from './PoolSelectorPopup';
 import { BottomSheet } from './ui/bottom-sheet';
-import { useCurrentNetwork } from '@mysten/dapp-kit-react';
+import { useCurrentNetwork, useCurrentAccount, ConnectButton } from '@mysten/dapp-kit-react';
 
 export function DeepBookTrading() {
   const [pools, setPools] = useState<PoolInfo[]>([]);
@@ -41,6 +41,7 @@ export function DeepBookTrading() {
   const [interval, setInterval] = useState<Interval>('1h');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const network = useCurrentNetwork();
+  const currentAccount = useCurrentAccount();
   const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
   const [tradeDrawerOpen, setTradeDrawerOpen] = useState(false);
   const [tradeDrawerSide, setTradeDrawerSide] = useState<'buy' | 'sell'>('buy');
@@ -399,43 +400,56 @@ export function DeepBookTrading() {
           </div>
         ) : undefined}
       >
-        <div className="flex flex-col gap-2 pb-6">
-          <div className="px-4">
-            <OrderPanel
-              poolInfo={selectedPoolInfo || null}
-              currentPrice={marketPrice?.midPrice || 0}
-              selectedPriceFromOrderBook={selectedPriceFromOrderBook}
-              initialSide={tradeDrawerSide}
-              compact
-            />
-          </div>
-          <div className="border-t">
-            <button
-              type="button"
-              onClick={() => setOrderBookExpanded(!orderBookExpanded)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
-            >
-              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Order Book
-              </h4>
-              {orderBookExpanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="relative flex flex-col min-h-[200px]">
+          <div className={cn(
+            "flex flex-col gap-2 pb-6 transition-all duration-200",
+            !currentAccount && "blur-sm pointer-events-none select-none"
+          )}>
+            <div className="px-4">
+              <OrderPanel
+                poolInfo={selectedPoolInfo || null}
+                currentPrice={marketPrice?.midPrice || 0}
+                selectedPriceFromOrderBook={selectedPriceFromOrderBook}
+                initialSide={tradeDrawerSide}
+                compact
+              />
+            </div>
+            <div className="border-t">
+              <button
+                type="button"
+                onClick={() => setOrderBookExpanded(!orderBookExpanded)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
+              >
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Order Book
+                </h4>
+                {orderBookExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+              </button>
+              {orderBookExpanded && (
+                <div className="min-h-[180px] max-h-[240px] overflow-auto">
+                  <OrderBook
+                    poolName={selectedPool || ''}
+                    network={network}
+                    onSelectPrice={(price) => {
+                      setSelectedPriceFromOrderBook(price);
+                    }}
+                  />
+                </div>
               )}
-            </button>
-            {orderBookExpanded && (
-              <div className="min-h-[180px] max-h-[240px] overflow-auto">
-                <OrderBook
-                  poolName={selectedPool || ''}
-                  network={network}
-                  onSelectPrice={(price) => {
-                    setSelectedPriceFromOrderBook(price);
-                  }}
-                />
-              </div>
-            )}
+            </div>
           </div>
+          {!currentAccount && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+              <p className="text-sm text-muted-foreground text-center">Connect your wallet to start trading</p>
+              <div className="[&>button]:!min-h-[48px] [&>button]:!px-8 [&>button]:!text-base [&>button]:!font-semibold">
+                <ConnectButton />
+              </div>
+            </div>
+          )}
         </div>
       </BottomSheet>
 

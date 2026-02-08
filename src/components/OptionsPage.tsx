@@ -736,34 +736,49 @@ export function OptionsPage() {
                 open={!!selectedOption}
                 onClose={() => setSelectedOption(null)}
             >
-                <div className="px-4 pb-6">
-                    <OptionsActionPanel
-                        selectedOption={selectedOption}
-                        currentAccount={currentAccount}
-                        collateralAmount={selectedOption ? (collateralAmounts[selectedOption.id] ?? "") : ""}
-                        onCollateralChange={(v) =>
-                            selectedOption && setCollateralAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
-                        }
-                        exerciseAmount={selectedOption ? (exerciseAmounts[selectedOption.id] ?? "") : ""}
-                        onExerciseAmountChange={(v) =>
-                            selectedOption && setExerciseAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
-                        }
-                        onMint={handleMintOptions}
-                        onExercise={handleExerciseOptions}
-                        onUpdatePrice={handleUpdatePrice}
-                        isMinting={selectedOption ? mintingPool === selectedOption.id : false}
-                        isExercising={selectedOption ? exercisingPool === selectedOption.id : false}
-                        isUpdatingPrice={selectedOption ? updatingPricePool === selectedOption.id : false}
-                        hasDeepbookPool={selectedOption ? deepbookPools.has(selectedOption.deepbookPoolName) : false}
-                        userBalance={selectedOption ? userTokenBalances[selectedOption.id] : undefined}
-                        formatDate={formatDate}
-                        isExpired={isExpired}
-                        createPoolForm={createPoolForm}
-                        onCreatePoolFormChange={setCreatePoolForm}
-                        onCreatePool={handleCreatePermissionlessPool}
-                        creatingPool={creatingPool}
-                        publishedOptions={PUBLISHED_OPTIONS}
-                    />
+                <div className="relative flex flex-col min-h-[200px]">
+                    <div
+                        className={`px-4 pb-6 transition-all duration-200 ${!currentAccount ? "blur-sm pointer-events-none select-none" : ""
+                            }`}
+                    >
+                        <OptionsActionPanel
+                            selectedOption={selectedOption}
+                            currentAccount={currentAccount}
+                            collateralAmount={selectedOption ? (collateralAmounts[selectedOption.id] ?? "") : ""}
+                            onCollateralChange={(v) =>
+                                selectedOption && setCollateralAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                            }
+                            exerciseAmount={selectedOption ? (exerciseAmounts[selectedOption.id] ?? "") : ""}
+                            onExerciseAmountChange={(v) =>
+                                selectedOption && setExerciseAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                            }
+                            onMint={handleMintOptions}
+                            onExercise={handleExerciseOptions}
+                            onUpdatePrice={handleUpdatePrice}
+                            isMinting={selectedOption ? mintingPool === selectedOption.id : false}
+                            isExercising={selectedOption ? exercisingPool === selectedOption.id : false}
+                            isUpdatingPrice={selectedOption ? updatingPricePool === selectedOption.id : false}
+                            hasDeepbookPool={selectedOption ? deepbookPools.has(selectedOption.deepbookPoolName) : false}
+                            userBalance={selectedOption ? userTokenBalances[selectedOption.id] : undefined}
+                            formatDate={formatDate}
+                            isExpired={isExpired}
+                            createPoolForm={createPoolForm}
+                            onCreatePoolFormChange={setCreatePoolForm}
+                            onCreatePool={handleCreatePermissionlessPool}
+                            creatingPool={creatingPool}
+                            publishedOptions={PUBLISHED_OPTIONS}
+                        />
+                    </div>
+                    {!currentAccount && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+                            <p className="text-sm text-muted-foreground text-center">
+                                Connect your wallet to mint or exercise options
+                            </p>
+                            <div className="[&>button]:!min-h-[48px] [&>button]:!px-8 [&>button]:!text-base [&>button]:!font-semibold">
+                                <ConnectButton />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </BottomSheet>
         </div>
