@@ -562,7 +562,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Limit
                                 </button>
                             </div>
-                            <div className="flex rounded-xl bg-muted p-1 border border-border shadow-clay-sm">
+                            <div className="flex rounded-xl bg-muted p-1 border border-border shadow-clay-sm mt-4">
                                 <button
                                     onClick={() => setSide('buy')}
                                     className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-display font-bold uppercase rounded-lg transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-buy text-buy-foreground shadow-clay-sm' : 'hover:text-foreground/80 active:bg-muted')}
@@ -728,7 +728,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Deposit
                                 </Button>
                                 <Button
-                                    className={cn("flex-1 text-sm", compact ? "w-full py-2" : "py-2")}
+                                    className={cn("w-full text-sm", compact ? "py-2" : "py-2.5")}
                                     variant="outline"
                                     onClick={() => setIsWithdrawModalOpen(true)}
                                     disabled={isWithdrawing || !balanceManager}

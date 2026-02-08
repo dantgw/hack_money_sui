@@ -331,8 +331,8 @@ export function DeepBookTrading() {
             </div>
           )}
 
-          {/* Chart Area — on mobile use most of viewport (header ~4rem, bar+nav ~8rem) */}
-          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative overflow-hidden">
+          {/* Chart Area — on mobile use most of viewport (header ~4rem, bar+nav ~8rem); on desktop flex to fill */}
+          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-[300px] relative overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}
@@ -350,8 +350,8 @@ export function DeepBookTrading() {
             )}
           </div>
 
-          {/* Account Panel — Desktop: always visible below chart */}
-          <div className="hidden lg:block h-[280px] xl:h-[300px] border-t-2 border-border overflow-hidden bg-card/80 backdrop-blur-sm shrink-0">
+          {/* Account Panel — Desktop: orders below chart, scrolls when many orders */}
+          <div className="hidden lg:block h-[220px] xl:h-[260px] border-t-2 border-border overflow-hidden bg-card/80 backdrop-blur-sm shrink-0">
             <AccountPanel poolName={selectedPool || ''} />
           </div>
         </div>

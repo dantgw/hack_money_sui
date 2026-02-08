@@ -34,7 +34,7 @@ function App() {
     );
 
   return (
-    <div className="min-h-dvh min-h-screen flex flex-col bg-app-gradient">
+    <div className="h-dvh flex flex-col bg-app-gradient">
       {/* Header — Neubrutalism: heavy black border */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/60 shrink-0">
         <div className="w-full flex h-12 sm:h-14 items-center justify-between px-3 sm:px-4 gap-2">
@@ -78,9 +78,9 @@ function App() {
 
       {/* Main content — room for bottom tab bar on mobile */}
       <main className="flex-1 min-h-0 overflow-hidden pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <Routes>
-            <Route path="/" element={<DeepBookTrading />} />
+            <Route path="/" element={<div className="flex-1 min-h-0 min-w-0 flex flex-col"><DeepBookTrading /></div>} />
             <Route path="/options" element={<OptionsPage />} />
             <Route path="/account" element={<AccountPage />} />
           </Routes>
