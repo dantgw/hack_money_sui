@@ -114,7 +114,7 @@ export function AccountPage() {
         <div>
           {/* Trading history graph with timeframe selector */}
           <Card className="overflow-hidden border-0 bg-card/50">
-            <CardContent className="pt-6 lg:pt-8">
+            <CardContent className="pt-6 lg:pt-8 px-4 sm:px-6 lg:px-0">
               <PortfolioChart
                 totalValue={totalValue}
                 dailyChange={dailyChange}
