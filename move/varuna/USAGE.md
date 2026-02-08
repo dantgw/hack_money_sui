@@ -2,26 +2,33 @@
 
 ## Overview
 
-The Varuna options pool contract has been refactored to work with Sui's type system by using specific option token types instead of a dynamic factory. Each option (e.g., CALL SUI/USDC Strike 2000 expiring Jan 1, 2025) requires its own token module.
+The Varuna options pool contract has been refactored to work with Sui's type
+system by using specific option token types instead of a dynamic factory. Each
+option (e.g., CALL SUI/USDC Strike 2000 expiring Jan 1, 2025) requires its own
+token module.
 
 ## Key Changes from Factory Pattern
 
 ### Before (Factory Pattern - Not Compatible with Sui)
+
 - One contract tried to create multiple different token types dynamically
 - Used a token factory to generate tokens on demand
 - Not compatible with Sui's type system
 
 ### After (Single Token Pattern - Sui Compatible)
+
 - Each option has its own token module with a unique type
 - Uses the One-Time Witness (OTW) pattern for token creation
 - Fully compatible with Sui's type system
-- Each pool is parameterized by three types: `<OptionToken, BaseAsset, QuoteAsset>`
+- Each pool is parameterized by three types:
+  `<OptionToken, BaseAsset, QuoteAsset>`
 
 ## Creating a New Option Token and Pool
 
 ### Step 1: Create the Option Token Module
 
-Create a new module file in `option_tokens/` directory. Example: `call_sui_usdc_2000.move`
+Create a new module file in `option_tokens/` directory. Example:
+`call_sui_usdc_2000.move`
 
 ```move
 module varuna::call_sui_usdc_2000 {
@@ -84,17 +91,20 @@ module varuna::call_sui_usdc_2000 {
 sui client publish --gas-budget 100000000
 ```
 
-When the module is published, the `init` function runs automatically, creating the token and transferring the `TreasuryCap` to the publisher.
+When the module is published, the `init` function runs automatically, creating
+the token and transferring the `TreasuryCap` to the publisher.
 
 ### Step 3: Create the Pool
 
 After publishing, call the `create_pool` helper function with:
+
 - The `TreasuryCap` you received (must have zero supply - no pre-minted tokens!)
 - The DeepBook pool ID for price oracle
 - Clock object
 - Transaction context
 
-**CRITICAL:** The pool creation will fail if any tokens were pre-minted. This security feature ensures all option tokens are fully backed by collateral.
+**CRITICAL:** The pool creation will fail if any tokens were pre-minted. This
+security feature ensures all option tokens are fully backed by collateral.
 
 ```bash
 sui client call --package <PACKAGE_ID> \
@@ -106,18 +116,33 @@ sui client call --package <PACKAGE_ID> \
 ```
 
 ## CALL OPTIONS PACKAGE
+
 ```
 sui client call --package 0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41695ca146aae8 --module call_deep_sui_30000000_exp20270101 --function create_pool --args 0x67fea1cea4376dc9f85ce635c6da7f161f005a997918388d7cc6eb2567d2d5b0 0x48c95963e9eac37a316b7ae04a0deb761bcdcc2b67912374d6036e7f0e9bae9f 0x6 --type-args 0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP 0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI
 ```
+
 ```
 object id
 0x77a55a7f355f449db59fa7de7f957c79c211a0a893f7ba01115cf2e9c00db58e
 ```
 
+## CALL_20000000 OPTIONS PACKAGE
+
+```
+sui client call --package 0x33083f7f56ad45645c8f17c6b92af2ccc38dda29202a52d86de3daaa137aec86 --module call_deep_sui_20000000_exp20270101 --function create_pool --args 0xf967d5caa38c03c1a1f940e43e63de051a467b415396aefe33f3727d884cb13d 0x48c95963e9eac37a316b7ae04a0deb761bcdcc2b67912374d6036e7f0e9bae9f 0x6 --type-args 0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP 0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI
+```
+
+```
+object id
+0x48dec36157e3073bb5b0a41f9628a26a2b63929f70858271fc0698cee83545ec
+```
+
 ## PUT OPTIONS PACKAGE
+
 ```
 sui client call --package 0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427 --module put_deep_sui_30000000_exp20270101 --function create_pool --args 0x031a57af76aa794531681deaa095fd0bab54891e29297fd1618e7f3e09ac5666 0x48c95963e9eac37a316b7ae04a0deb761bcdcc2b67912374d6036e7f0e9bae9f 0x6 --type-args 0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP 0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI
 ```
+
 ```
 object id
 0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c
@@ -139,7 +164,9 @@ let (option_coins, owner_token) = options_pool::mint_call_options<CALL_SUI_USDC_
 ```
 
 Returns:
-- `option_coins`: Tradeable `Coin<CALL_SUI_USDC_2000>` that can be sold on DeepBook
+
+- `option_coins`: Tradeable `Coin<CALL_SUI_USDC_2000>` that can be sold on
+  DeepBook
 - `owner_token`: Represents claim to residual collateral after settlement
 
 ### Minting Put Options (Sellers)
@@ -201,7 +228,8 @@ options_pool::settle_pool<CALL_SUI_USDC_2000, SUI, USDC>(
 
 ### Claiming Collateral (Sellers)
 
-After settlement, option sellers can claim their residual collateral with owner tokens:
+After settlement, option sellers can claim their residual collateral with owner
+tokens:
 
 ```move
 // For call options
@@ -250,6 +278,7 @@ Every function now requires three type parameters:
 3. **QuoteAsset**: The quote/payment asset (e.g., `USDC`)
 
 Example:
+
 ```move
 options_pool::mint_call_options<CALL_SUI_USDC_2000, SUI, USDC>(...)
 ```
@@ -257,6 +286,7 @@ options_pool::mint_call_options<CALL_SUI_USDC_2000, SUI, USDC>(...)
 ## Trading Option Tokens
 
 Once minted, option tokens are standard `Coin<T>` objects that can be:
+
 - Transferred to other addresses
 - Split and merged using `coin::split()` and `coin::join()`
 - **Traded on DeepBook** - Create a liquidity pool for the option token
@@ -273,6 +303,7 @@ Once minted, option tokens are standard `Coin<T>` objects that can be:
 ## Example: Complete Flow for Call Options
 
 ### 1. Option Seller (Writer)
+
 ```move
 // Deposit 100 SUI to mint 100 CALL options
 let (option_coins, owner_token) = mint_call_options(pool, sui_coin_100, clock, ctx);
@@ -284,6 +315,7 @@ transfer::public_transfer(option_coins, buyer_address);
 ```
 
 ### 2. Option Buyer
+
 ```move
 // Buy option_coins from seller or DeepBook
 // Wait for price to go above strike
@@ -297,6 +329,7 @@ let sui_payout = claim_with_call_options(pool, option_coins, usdc_payment, ctx);
 ```
 
 ### 3. After Expiration
+
 ```move
 // Seller claims residual collateral with owner_token
 let (sui, usdc) = claim_collateral_call(pool, owner_token, ctx);
@@ -325,7 +358,8 @@ let (sui, usdc) = claim_collateral_call(pool, owner_token, ctx);
 - `EInvalidPoolReference (10)`: Owner token doesn't match pool
 - `EPriceStale (11)`: Price data is too old
 - `ENotAuthorized (12)`: Operation not authorized
-- `ETokenSupplyNotZero (13)`: TreasuryCap has pre-minted tokens (supply must be zero)
+- `ETokenSupplyNotZero (13)`: TreasuryCap has pre-minted tokens (supply must be
+  zero)
 
 ## Next Steps
 

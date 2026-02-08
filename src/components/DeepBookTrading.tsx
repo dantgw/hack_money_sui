@@ -307,7 +307,7 @@ export function DeepBookTrading() {
           )}
 
           {/* Chart Area */}
-          <div className="flex-1 min-h-[180px] sm:min-h-[220px] relative bg-[#0c0d10] overflow-hidden">
+          <div className="flex-1 min-h-[180px] sm:min-h-[560px] relative bg-[#0c0d10] overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}
