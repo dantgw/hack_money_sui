@@ -62,7 +62,7 @@ export function OptionsActionPanel({
     const expired = selectedOption ? isExpired(selectedOption.expirationDate) : false;
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 bg-background overflow-hidden w-full">
+        <div className="flex flex-col flex-1 min-h-0 bg-card/95 overflow-hidden w-full">
             <div className="flex-1 overflow-auto p-4 space-y-6">
                 {/* Option actions (when selected) */}
                 {selectedOption ? (
@@ -152,7 +152,7 @@ export function OptionsActionPanel({
                                         value={collateralAmount}
                                         onChange={(e) => onCollateralChange(e.target.value)}
                                         placeholder="0.00"
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-3 py-2 rounded-md border bg-input text-sm focus:ring-1 focus:ring-primary outline-none"
                                         disabled={isMinting || expired}
                                     />
                                 </div>
@@ -183,7 +183,7 @@ export function OptionsActionPanel({
                                         value={exerciseAmount}
                                         onChange={(e) => onExerciseAmountChange(e.target.value)}
                                         placeholder="Amount to exercise"
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-3 py-2 rounded-md border bg-input text-sm focus:ring-1 focus:ring-primary outline-none"
                                         disabled={isExercising || expired}
                                     />
                                     <Button
@@ -242,11 +242,11 @@ export function OptionsActionPanel({
                                     value={createPoolForm.baseAssetType}
                                     onChange={(e) => onCreatePoolFormChange((p) => ({ ...p, baseAssetType: e.target.value }))}
                                     placeholder="0x...::module::TYPE"
-                                    className="w-full px-3 py-2 rounded-md border bg-background text-sm font-mono focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full px-3 py-2 rounded-md border bg-input text-sm font-mono focus:ring-1 focus:ring-primary outline-none"
                                 />
                                 {publishedOptions.length > 0 && (
                                     <select
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-3 py-2 rounded-md border bg-input text-sm focus:ring-1 focus:ring-primary outline-none"
                                         onChange={(e) => {
                                             const opt = publishedOptions.find((o) => o.optionTokenType === e.target.value);
                                             if (opt) onCreatePoolFormChange((p) => ({ ...p, baseAssetType: opt.optionTokenType }));
@@ -262,7 +262,7 @@ export function OptionsActionPanel({
                             <div className="space-y-1.5">
                                 <label className="text-xs text-muted-foreground uppercase font-bold">Quote Asset Type</label>
                                 <select
-                                    className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full px-3 py-2 rounded-md border bg-input text-sm focus:ring-1 focus:ring-primary outline-none"
                                     value={createPoolForm.quoteAssetType}
                                     onChange={(e) => onCreatePoolFormChange((p) => ({ ...p, quoteAssetType: e.target.value }))}
                                 >
@@ -278,7 +278,7 @@ export function OptionsActionPanel({
                                         type="number"
                                         value={createPoolForm.tickSize}
                                         onChange={(e) => onCreatePoolFormChange((p) => ({ ...p, tickSize: parseInt(e.target.value) || 1000 }))}
-                                        className="w-full px-2 py-1.5 rounded-md border bg-background text-xs focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-2 py-1.5 rounded-md border bg-input text-xs focus:ring-1 focus:ring-primary outline-none"
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -287,7 +287,7 @@ export function OptionsActionPanel({
                                         type="number"
                                         value={createPoolForm.lotSize}
                                         onChange={(e) => onCreatePoolFormChange((p) => ({ ...p, lotSize: parseInt(e.target.value) || 1000 }))}
-                                        className="w-full px-2 py-1.5 rounded-md border bg-background text-xs focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-2 py-1.5 rounded-md border bg-input text-xs focus:ring-1 focus:ring-primary outline-none"
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -296,7 +296,7 @@ export function OptionsActionPanel({
                                         type="number"
                                         value={createPoolForm.minSize}
                                         onChange={(e) => onCreatePoolFormChange((p) => ({ ...p, minSize: parseInt(e.target.value) || 10000 }))}
-                                        className="w-full px-2 py-1.5 rounded-md border bg-background text-xs focus:ring-1 focus:ring-primary outline-none"
+                                        className="w-full px-2 py-1.5 rounded-md border bg-input text-xs focus:ring-1 focus:ring-primary outline-none"
                                     />
                                 </div>
                             </div>

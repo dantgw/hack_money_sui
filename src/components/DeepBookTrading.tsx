@@ -292,7 +292,7 @@ export function DeepBookTrading() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background gap-4">
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
         <RefreshCw className="h-10 w-10 animate-spin text-primary" />
         <p className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-widest">Initialising DeepBook...</p>
       </div>
@@ -302,7 +302,7 @@ export function DeepBookTrading() {
   const selectedPoolInfo = pools.find((p) => p.poolName === selectedPool);
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden selection:bg-primary/30 relative">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden selection:bg-primary/30 relative">
       {/* Main Layout Container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
@@ -332,7 +332,7 @@ export function DeepBookTrading() {
           )}
 
           {/* Chart Area — on mobile use most of viewport (header ~4rem, bar+nav ~8rem) */}
-          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative bg-background overflow-hidden">
+          <div className="flex-1 min-h-[calc(100dvh-12rem)] lg:min-h-0 relative overflow-hidden">
             {chartData.length > 0 && selectedPoolInfo ? (
               <TradingChart
                 data={chartData}
@@ -351,13 +351,13 @@ export function DeepBookTrading() {
           </div>
 
           {/* Account Panel — Desktop: always visible below chart */}
-          <div className="hidden lg:block h-[280px] xl:h-[300px] border-t-2 border-border overflow-hidden bg-background shrink-0">
+          <div className="hidden lg:block h-[280px] xl:h-[300px] border-t-2 border-border overflow-hidden bg-card/80 backdrop-blur-sm shrink-0">
             <AccountPanel poolName={selectedPool || ''} />
           </div>
         </div>
 
         {/* Mobile: Buy/Sell bar — Neubrutalism CTAs */}
-        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t border-border">
+        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-card/95 backdrop-blur border-t border-border">
           <button
             onClick={() => {
               setTradeDrawerSide('buy');
@@ -379,7 +379,7 @@ export function DeepBookTrading() {
         </div>
 
         {/* Desktop: Order Book (Fixed Width) */}
-        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l border-r border-border bg-background overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l border-r border-border bg-card/90 backdrop-blur-sm overflow-hidden">
           <OrderBook
             poolName={selectedPool || ''}
             network={network}
@@ -388,7 +388,7 @@ export function DeepBookTrading() {
         </div>
 
         {/* Desktop: Order Entry Panel (Fixed Width) */}
-        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col bg-background overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col bg-card/90 backdrop-blur-sm overflow-hidden">
           <OrderPanel
             poolInfo={selectedPoolInfo || null}
             currentPrice={marketPrice?.midPrice || 0}
@@ -444,7 +444,7 @@ export function DeepBookTrading() {
             </div>
           </div>
           {!currentAccount && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-card/80 backdrop-blur-sm">
               <p className="text-sm text-muted-foreground text-center">Connect your wallet to start trading</p>
               <div className="[&>button]:!min-h-[48px] [&>button]:!px-8 [&>button]:!text-base [&>button]:!font-semibold">
                 <ConnectButton />
@@ -455,7 +455,7 @@ export function DeepBookTrading() {
       </BottomSheet>
 
       {/* Footer Status Bar — Neubrutalism badge */}
-      <div className="hidden sm:flex h-6 sm:h-7 border-t border-border bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0 font-display">
+      <div className="hidden sm:flex h-6 sm:h-7 border-t border-border bg-card/80 backdrop-blur-sm items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0 font-display">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <div className="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border border-border bg-primary/10 shadow-clay-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 animate-pulse" />

@@ -91,7 +91,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                     <input
                         autoFocus
                         placeholder="Search by symbol or asset..."
-                        className="w-full bg-background border border-border rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary outline-none"
+                        className="w-full bg-input border border-border rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary outline-none"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -184,7 +184,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
             </div>
 
             {/* Footer */}
-            <div className="p-2 bg-background border-t border-border flex items-center justify-between text-[10px] text-muted-foreground font-medium uppercase">
+            <div className="p-2 bg-card border-t border-border flex items-center justify-between text-[10px] text-muted-foreground font-medium uppercase">
                 <div className="flex items-center space-x-4 pl-2">
                     <span><span className="text-foreground">↑↓</span> Navigate</span>
                     <span><span className="text-foreground">Enter</span> Select</span>

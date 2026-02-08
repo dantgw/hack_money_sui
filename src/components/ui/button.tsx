@@ -28,7 +28,7 @@ function Button({
             variant === "default",
           "bg-secondary text-secondary-foreground border border-border shadow-clay hover:bg-secondary/80":
             variant === "secondary",
-          "border border-border bg-background shadow-clay-sm hover:bg-accent hover:text-accent-foreground":
+          "border border-border bg-card/80 shadow-clay-sm hover:bg-accent hover:text-accent-foreground":
             variant === "outline",
           "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
         },

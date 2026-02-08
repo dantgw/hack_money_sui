@@ -54,7 +54,7 @@ export function OrderBook({ poolName, network, onSelectPrice }: OrderBookProps) 
     };
 
     return (
-        <div className="flex flex-col h-full bg-background text-[11px] sm:text-[12px]">
+        <div className="flex flex-col h-full bg-card/95 text-[11px] sm:text-[12px]">
             {/* Tab Header — bold borders, font-display */}
             <div className="flex border-b border-border shrink-0 font-display">
                 <button

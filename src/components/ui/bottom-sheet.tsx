@@ -49,7 +49,7 @@ export function BottomSheet({ open, onClose, children, title, className }: Botto
             {/* Sheet */}
             <div
                 className={cn(
-                    "fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl border-t border-border bg-background shadow-clay-lg transition-transform duration-300 ease-out lg:hidden",
+                    "fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl border-t border-border bg-card shadow-clay-lg transition-transform duration-300 ease-out lg:hidden",
                     "max-h-[85vh]",
                     open ? "translate-y-0" : "translate-y-full",
                     className

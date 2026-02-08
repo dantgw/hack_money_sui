@@ -233,25 +233,25 @@ export function TradingChart({
                 height,
                 autoSize: true, // Handles mobile resize; uses ResizeObserver internally
                 layout: {
-                    background: { type: ColorType.Solid, color: '#0f1419' },
-                    textColor: '#e7e5e2',
+                    background: { type: ColorType.Solid, color: '#14181c' },
+                    textColor: '#e2e8f0',
                 },
                 grid: {
-                    vertLines: { color: '#252b33' },
-                    horzLines: { color: '#252b33' },
+                    vertLines: { color: '#1e293b' },
+                    horzLines: { color: '#1e293b' },
                 },
                 crosshair: {
                     mode: 1,
                 },
                 rightPriceScale: {
-                    borderColor: '#404040',
+                    borderColor: '#334155',
                     scaleMargins: {
                         top: 0.1,
                         bottom: 0.1,
                     },
                 },
                 timeScale: {
-                    borderColor: '#404040',
+                    borderColor: '#334155',
                     timeVisible: true,
                     secondsVisible: false,
                     rightOffset: 10,
@@ -266,12 +266,12 @@ export function TradingChart({
 
             chartRef.current = chart;
 
-            // Add candlestick series (bold palette: green for up, red for down)
+            // Add candlestick series (bold palette: emerald for up, red for down — matches theme)
             const candlestickSeries = chart.addSeries(CandlestickSeries, {
-                upColor: '#4ade80',
+                upColor: '#34d399',
                 downColor: '#f87171',
                 borderVisible: false,
-                wickUpColor: '#4ade80',
+                wickUpColor: '#34d399',
                 wickDownColor: '#f87171',
             });
 

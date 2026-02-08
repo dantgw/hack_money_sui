@@ -511,7 +511,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
     const needsDeposit = compact && currentAccount && !isLoadingBalanceManager && (!balanceManager || (balance ?? 0) === 0);
 
     return (
-        <div className="flex flex-col h-full justify-between bg-background overflow-y-auto">
+        <div className="flex flex-col h-full justify-between bg-card/95 overflow-y-auto">
 
             {/* Trading Section */}
             <div className={cn("relative min-h-[180px]", compact ? "px-4 py-3 space-y-3" : "p-4 sm:p-4 space-y-4")}>
@@ -651,7 +651,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                     </div>
                 </div>
                 {needsDeposit && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-card/80 backdrop-blur-sm">
                         <p className="text-sm text-muted-foreground text-center">
                             Deposit SUI to fund your balance and start trading
                         </p>
@@ -744,7 +744,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
             {/* Deposit Modal */}
             {isDepositModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
-                    <div className="w-full max-w-md rounded-xl border border-border bg-background shadow-clay-lg max-h-[90vh] overflow-y-auto">
+                    <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-clay-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
                                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-primary/10">
@@ -768,7 +768,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Asset
                                 </label>
                                 <select
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                                     value="SUI"
                                     disabled
                                 >
@@ -784,7 +784,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     type="number"
                                     value={depositAmount}
                                     onChange={(e) => setDepositAmount(e.target.value)}
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                                     placeholder="0.00"
                                     disabled={isDepositing}
                                 />
@@ -818,7 +818,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
             {/* Withdraw Modal */}
             {isWithdrawModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
-                    <div className="w-full max-w-md rounded-xl border border-border bg-background shadow-clay-lg max-h-[90vh] overflow-y-auto">
+                    <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-clay-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
                                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-primary/10">
@@ -842,7 +842,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Asset
                                 </label>
                                 <select
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                                     value="SUI"
                                     disabled
                                 >
@@ -858,7 +858,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     type="number"
                                     value={withdrawAmount}
                                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                                     placeholder="0.00"
                                     disabled={isWithdrawing}
                                 />

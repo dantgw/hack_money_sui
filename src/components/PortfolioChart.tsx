@@ -11,9 +11,9 @@ import {
 } from "lightweight-charts";
 import { cn } from "../lib/utils";
 
-export type PortfolioTimeframe = "1W" | "1M" | "3M" | "YTD" | "1Y" | "ALL";
+export type PortfolioTimeframe = "1M" | "3M" | "YTD" | "1Y" | "ALL";
 
-const TIMEFRAME_OPTIONS: PortfolioTimeframe[] = ["1W", "1M", "3M", "YTD", "1Y", "ALL"];
+const TIMEFRAME_OPTIONS: PortfolioTimeframe[] = ["1M", "3M", "YTD", "1Y", "ALL"];
 
 // Generate realistic simulated portfolio value data
 function generateSimulatedData(

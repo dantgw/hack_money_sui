@@ -1,31 +1,31 @@
 @import "tailwindcss";
 
-/* Claymorphism theme — dark, soft, rounded, trading-ready */
+/* Claymorphism theme — WSB-inspired, cool, distinctive, trading-ready */
 @theme {
-  /* Dark palette — high contrast, readable */
-  --color-background: #16181d;
-  --color-foreground: #e8e6e3;
-  --color-card: #1e2128;
-  --color-card-foreground: #e8e6e3;
-  /* Accent: soft amber/gold — distinct from green, works for trading */
-  --color-primary: #d4a84b;
-  --color-primary-foreground: #16181d;
-  --color-secondary: #252931;
-  --color-secondary-foreground: #e8e6e3;
-  --color-muted: #252931;
-  --color-muted-foreground: #9ca3af;
-  --color-accent: #d4a84b;
-  --color-accent-foreground: #16181d;
+  /* Cool slate palette — NOT generic exchange gray */
+  --color-background: #14181c;
+  --color-foreground: #e2e8f0;
+  --color-card: #1e2328;
+  --color-card-foreground: #e2e8f0;
+  /* Accent: punchy cyan — cool, tech */
+  --color-primary: #22d3ee;
+  --color-primary-foreground: #0f172a;
+  --color-secondary: #1e293b;
+  --color-secondary-foreground: #e2e8f0;
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #22d3ee;
+  --color-accent-foreground: #0f172a;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  /* Trading semantics: buy=green, sell=red */
-  --color-buy: #4ade80;
-  --color-buy-foreground: #16181d;
+  /* Trading semantics: buy=green, sell=red — high contrast for readability */
+  --color-buy: #34d399;
+  --color-buy-foreground: #0f172a;
   --color-sell: #f87171;
   --color-sell-foreground: #ffffff;
-  --color-border: #2d323b;
-  --color-input: #252931;
-  --color-ring: #d4a84b;
+  --color-border: #334155;
+  --color-input: #1e293b;
+  --color-ring: #22d3ee;
   --color-sui: oklch(0.7 0.2 220);
 
   /* Claymorphism: soft rounded corners */
@@ -44,32 +44,37 @@
   border-color: var(--color-border);
 }
 
-/* Claymorphism: soft inner + outer shadows */
+/* Claymorphism: soft inner + outer shadows — cool depth */
 .shadow-clay {
   box-shadow:
-    inset 2px 2px 4px rgba(255, 255, 255, 0.06),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.25),
-    0 4px 12px rgba(0, 0, 0, 0.35);
+    inset 2px 2px 4px rgba(255, 255, 255, 0.07),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .shadow-clay-sm {
   box-shadow:
     inset 1px 1px 2px rgba(255, 255, 255, 0.06),
-    inset -1px -1px 2px rgba(0, 0, 0, 0.2),
-    0 2px 8px rgba(0, 0, 0, 0.25);
+    inset -1px -1px 2px rgba(0, 0, 0, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .shadow-clay-lg {
   box-shadow:
-    inset 3px 3px 6px rgba(255, 255, 255, 0.06),
-    inset -3px -3px 6px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.4);
+    inset 3px 3px 6px rgba(255, 255, 255, 0.08),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.35),
+    0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
-/* Card-specific: frosted glass effect */
+/* Card-specific: frosted glass effect — cool slate */
 .bg-card-clay {
-  background: linear-gradient(145deg, rgba(30, 33, 40, 0.9) 0%, rgba(22, 24, 29, 0.95) 100%);
+  background: linear-gradient(145deg, rgba(30, 35, 40, 0.95) 0%, rgba(20, 24, 28, 0.98) 100%);
   backdrop-filter: blur(12px);
+}
+
+/* App-level background — solid, no gradient */
+.bg-app-gradient {
+  background-color: var(--color-background);
 }
 
 /* Ensure dAppKit ConnectButton dropdown/menu appears above fixed bottom nav (z-40) */

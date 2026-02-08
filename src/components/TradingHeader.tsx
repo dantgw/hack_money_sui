@@ -26,7 +26,7 @@ interface TradingHeaderProps {
 
 export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, isSelectorOpen }: TradingHeaderProps) {
     return (
-        <div className="flex items-center justify-between p-2 sm:p-2 bg-background border-b border-border text-[11px] sm:text-[12px] font-display">
+        <div className="flex items-center justify-between p-2 sm:p-2 bg-card/90 backdrop-blur-sm border-b border-border text-[11px] sm:text-[12px] font-display">
             <div className="flex items-center space-x-3 sm:space-x-6 pl-1 sm:pl-2 min-w-0 flex-1">
                 <div className="flex items-center space-x-1 group cursor-pointer min-h-[44px] touch-manipulation py-1" onClick={onOpenSelector}>
                     <div className="flex items-center space-x-2 mr-1">

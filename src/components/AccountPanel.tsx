@@ -145,7 +145,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background">
+        <div className="flex flex-col h-full bg-card/95">
             <div className="flex border-b border-border shrink-0 font-display">
                 {tabs.map((tab) => (
                     <button

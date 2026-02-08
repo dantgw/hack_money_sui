@@ -76,7 +76,7 @@ export function AccountPage() {
   const isPositive = dailyChange >= 0;
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-background">
+    <div className="flex flex-col h-full overflow-auto">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Hero: Account value + daily change (Robinhood-style) */}
         <div className="pt-2 lg:pt-4">

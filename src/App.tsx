@@ -34,9 +34,9 @@ function App() {
     );
 
   return (
-    <div className="min-h-dvh min-h-screen flex flex-col bg-background">
+    <div className="min-h-dvh min-h-screen flex flex-col bg-app-gradient">
       {/* Header — Neubrutalism: heavy black border */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/60 shrink-0">
         <div className="w-full flex h-12 sm:h-14 items-center justify-between px-3 sm:px-4 gap-2">
           {/* Left: Brand — always visible */}
           <Link to="/" className="shrink-0 flex items-center font-display font-bold text-lg">
@@ -88,7 +88,7 @@ function App() {
       </main>
 
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 pb-[env(safe-area-inset-bottom)]"
         aria-label="Main navigation"
       >
         <div className="flex items-stretch h-14 font-display">

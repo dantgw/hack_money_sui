@@ -667,9 +667,9 @@ export function OptionsPage() {
     };
 
     return (
-        <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden selection:bg-primary/30">
+        <div className="flex flex-col h-full min-h-0 overflow-hidden selection:bg-primary/30">
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-background font-display">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-sm font-display">
                 <div>
                     <h2 className="text-xl sm:text-2xl font-bold">Options Chain</h2>
                     <p className="text-muted-foreground text-sm mt-0.5">
@@ -770,7 +770,7 @@ export function OptionsPage() {
                         />
                     </div>
                     {!currentAccount && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-background/70 backdrop-blur-sm">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 py-8 bg-card/80 backdrop-blur-sm">
                             <p className="text-sm text-muted-foreground text-center">
                                 Connect your wallet to mint or exercise options
                             </p>

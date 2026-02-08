@@ -81,7 +81,7 @@ export function OptionsChain({
     const formatStrike = (s: number) => s.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
     return (
-        <div className="flex flex-col h-full bg-background text-[11px] sm:text-[12px] overflow-hidden">
+        <div className="flex flex-col h-full bg-card/95 text-[11px] sm:text-[12px] overflow-hidden">
             {/* Header: on mobile, pool + expiry only; on desktop, Calls | Pool + Expiration | Puts */}
             <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-3 shrink-0">
                 {/* Calls label — hidden on mobile (duplicated in section headers) */}
@@ -100,7 +100,7 @@ export function OptionsChain({
                                     setActiveExpiration(null);
                                     onSelectOption(null);
                                 }}
-                                className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-background border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
+                                className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-input border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
                             >
                                 {pools.map(([key, opt]) => (
                                     <option key={key} value={key}>
@@ -115,7 +115,7 @@ export function OptionsChain({
                         <select
                             value={effectiveExpiration ?? ""}
                             onChange={(e) => setActiveExpiration(Number(e.target.value) || null)}
-                            className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-background border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
+                            className="w-full sm:flex-1 sm:min-w-0 min-h-[48px] bg-input border rounded-lg px-4 py-3 pr-10 text-base sm:text-sm font-medium focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer"
                         >
                             {expirations.map((exp) => {
                                 const days = Math.ceil((exp - Date.now()) / 86400000);
@@ -234,7 +234,7 @@ export function OptionsChain({
 
                     {/* Desktop: horizontal layout */}
                     <table className="hidden lg:table w-full border-collapse">
-                        <thead className="sticky top-0 bg-background z-10 border-b">
+                        <thead className="sticky top-0 bg-card z-10 border-b">
                             <tr>
                                 <th className="text-left py-2 px-2 text-muted-foreground font-medium">Bid</th>
                                 <th className="text-left py-2 px-2 text-muted-foreground font-medium">Ask</th>
