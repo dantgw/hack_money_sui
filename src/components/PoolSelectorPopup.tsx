@@ -1,6 +1,22 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { PoolInfo } from '../lib/deepbook';
+import { cn } from '../lib/utils';
+
+import deepLogo from '../assets/deep-logo.png';
+import suiLogo from '../assets/sui-logo.png';
+import usdcLogo from '../assets/usdc-logo.png';
+import walrusLogo from '../assets/walrus-logo.webp';
+
+const ASSET_LOGOS: Record<string, string> = {
+    DEEP: deepLogo,
+    SUI: suiLogo,
+    USDC: usdcLogo,
+    DBUSDC: usdcLogo,
+    DBUSDT: usdcLogo,
+    WAL: walrusLogo,
+    WALRUS: walrusLogo,
+};
 
 interface PoolSelectorPopupProps {
     isOpen: boolean;
@@ -85,7 +101,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1 text-xs font-bold text-muted-foreground uppercase tracking-tighter">
-                    {['All', 'Spot', 'Crypto', 'Trending'].map(cat => (
+                    {['All', 'Spot'].map(cat => (
                         <button
                             key={cat}
                             onClick={() => setCategory(cat)}
@@ -102,11 +118,11 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                 <table className="w-full text-left text-[13px]">
                     <thead className="sticky top-0 bg-[#15171c] text-muted-foreground font-bold border-b border-white/5 uppercase text-[10px] tracking-widest">
                         <tr>
-                            <th className="pl-4 py-3 w-8"></th>
+                            <th className="pl-4 pr-4 sm:pr-2 py-3 w-8"></th>
                             <th className="py-3">Symbol</th>
                             <th className="py-3 text-right">Price</th>
                             <th className="py-3 text-right">24h Change</th>
-                            <th className="py-3 text-right pr-4">Volume</th>
+                            <th className="hidden sm:table-cell py-3 text-right pr-4">Volume</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -124,13 +140,23 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                                     }}
                                     className={`group cursor-pointer transition-colors touch-manipulation min-h-[48px] ${isSelected ? 'bg-primary/5' : 'hover:bg-white/5 active:bg-white/10'}`}
                                 >
-                                    <td className="pl-4 py-3">
+                                    <td className="pl-4 pr-4 sm:pr-2 py-3">
                                         <Star className={`w-3.5 h-3.5 transition-colors ${isSelected ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground group-hover:text-white/40'}`} />
                                     </td>
-                                    <td className="py-3">
-                                        <div className="flex items-center space-x-2">
+                                    <td className="py-3 pl-2 sm:pl-0">
+                                        <div className="flex items-center gap-2">
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full overflow-hidden flex items-center justify-center shrink-0",
+                                                !ASSET_LOGOS[pool.baseCoin] && "bg-orange-500"
+                                            )}>
+                                                {ASSET_LOGOS[pool.baseCoin] ? (
+                                                    <img src={ASSET_LOGOS[pool.baseCoin]} alt={pool.baseCoin} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-white font-bold text-[10px]">{pool.baseCoin[0]}</span>
+                                                )}
+                                            </div>
                                             <span className="font-bold text-foreground">{pool.baseCoin}-{pool.quoteCoin}</span>
-                                            <span className="text-[10px] bg-white/5 px-1 rounded text-muted-foreground">SPOT</span>
+                                            <span className="hidden sm:inline text-[10px] bg-white/5 px-1 rounded text-muted-foreground">SPOT</span>
                                         </div>
                                     </td>
                                     <td className="py-3 text-right font-medium">
@@ -142,7 +168,7 @@ export function PoolSelectorPopup({ isOpen, onClose, pools, onSelect, selectedPo
                                             <span>{isPositive ? '+' : ''}{change}%</span>
                                         </div>
                                     </td>
-                                    <td className="py-3 text-right pr-4 text-muted-foreground">
+                                    <td className="hidden sm:table-cell py-3 text-right pr-4 text-muted-foreground">
                                         ${(Math.random() * 1000000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                     </td>
                                 </tr>
