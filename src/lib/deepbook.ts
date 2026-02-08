@@ -1,7 +1,7 @@
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
 import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction, type TransactionArgument } from '@mysten/sui/transactions';
 import { DeepBookClient } from '@mysten/deepbook-v3';
 
 // DeepBook Indexer endpoints
@@ -389,6 +389,15 @@ export const DEEPBOOK_BALANCE_MANAGER_PACKAGE_IDS = {
 export const REGISTRY_ID = {
   mainnet: "0xaf16199a2dff736e9f07a845f23c5da6df6f756eddb631aed9d24a93efc4549d",
   testnet: "0x7c256edbda983a2cd6f946655f4bf3f00a41043993781f8674a7046e8c0e11d1",
+} as const;
+
+/** Pool creation fee: 500 DEEP (6 decimals) */
+export const POOL_CREATION_FEE_DEEP = 500_000_000n;
+
+/** DEEP token type per network */
+export const DEEP_COIN_TYPE = {
+  mainnet: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
+  testnet: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP",
 } as const;
 
 export function getRegistryId(network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'): string {
@@ -856,4 +865,52 @@ export function cancelOrder(
     console.error('Error canceling order:', error);
     throw error;
   }
+}
+
+// =============== Permissionless Pool Creation ===============
+
+export interface CreatePermissionlessPoolParams {
+  /** Base asset type (e.g. option token type or SUI) */
+  baseAssetType: string;
+  /** Quote asset type (e.g. USDC or SUI) */
+  quoteAssetType: string;
+  /** Tick size - must be power of 10 (e.g. 1000) */
+  tickSize: number;
+  /** Lot size in base units - must be >= 1000, power of 10 */
+  lotSize: number;
+  /** Min size in base units - must be >= lotSize, multiple of lotSize, power of 10 */
+  minSize: number;
+  /** DEEP coin for creation fee (500 DEEP). Caller must split from their DEEP balance. */
+  creationFeeCoin: TransactionArgument;
+}
+
+/**
+ * Add create_permissionless_pool move call to a transaction.
+ * Requires 500 DEEP as creation fee. User must have DEEP coins and pass a split coin.
+ *
+ * @param tx - Transaction to add the call to
+ * @param params - Pool creation parameters
+ * @param network - Network (mainnet or testnet)
+ */
+export function createPermissionlessPool(
+  tx: Transaction,
+  params: CreatePermissionlessPoolParams,
+  network: 'mainnet' | 'testnet' | 'devnet' = 'mainnet'
+): void {
+  const packageId = getDeepBookPackageId(network);
+  const registryId = getRegistryId(network);
+
+  const { baseAssetType, quoteAssetType, tickSize, lotSize, minSize, creationFeeCoin } = params;
+
+  tx.moveCall({
+    target: `${packageId}::pool::create_permissionless_pool`,
+    typeArguments: [baseAssetType, quoteAssetType],
+    arguments: [
+      tx.object(registryId),
+      tx.pure.u64(tickSize),
+      tx.pure.u64(lotSize),
+      tx.pure.u64(minSize),
+      creationFeeCoin,
+    ],
+  });
 }

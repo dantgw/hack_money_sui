@@ -5,10 +5,10 @@ import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { ConnectButton } from "@mysten/dapp-kit-react";
-import { Loader2, Calendar, DollarSign, RefreshCw, Zap } from "lucide-react";
+import { Loader2, Calendar, DollarSign, RefreshCw, Zap, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { VARUNA_CALL_OPTIONS_PACKAGE_ID, VARUNA_PUT_OPTIONS_PACKAGE_ID } from "../constants";
-import { getAllPools } from "../lib/deepbook";
+import { getAllPools, createPermissionlessPool, POOL_CREATION_FEE_DEEP, DEEP_COIN_TYPE } from "../lib/deepbook";
 
 interface OptionPool {
     id: string;
@@ -108,16 +108,25 @@ export function OptionsPage() {
     const [exerciseAmounts, setExerciseAmounts] = useState<Record<string, string>>({});
     const [deepbookPools, setDeepbookPools] = useState<Map<string, string>>(new Map());
     const [userTokenBalances, setUserTokenBalances] = useState<Record<string, string>>({});
+    const [creatingPool, setCreatingPool] = useState(false);
+    const [createPoolForm, setCreatePoolForm] = useState({
+        baseAssetType: "",
+        quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+        tickSize: 1000,
+        lotSize: 1000,
+        minSize: 10000,
+    });
+
+    const loadDeepbookPools = async () => {
+        const network = currentNetwork as "mainnet" | "testnet" | "devnet";
+        const pools = await getAllPools(network);
+        const map = new Map<string, string>();
+        pools.forEach((p) => map.set(p.poolName, p.poolId));
+        setDeepbookPools(map);
+    };
 
     useEffect(() => {
-        const load = async () => {
-            const network = currentNetwork as "mainnet" | "testnet" | "devnet";
-            const pools = await getAllPools(network);
-            const map = new Map<string, string>();
-            pools.forEach((p) => map.set(p.poolName, p.poolId));
-            setDeepbookPools(map);
-        };
-        load();
+        loadDeepbookPools();
     }, [currentNetwork]);
 
     // Fetch user's option token and owner token balances for each pool
@@ -577,6 +586,81 @@ export function OptionsPage() {
         }
     };
 
+    const handleCreatePermissionlessPool = async () => {
+        if (!currentAccount?.address) {
+            toast.error("Please connect your wallet");
+            return;
+        }
+        const { baseAssetType, quoteAssetType, tickSize, lotSize, minSize } = createPoolForm;
+        if (!baseAssetType || !quoteAssetType) {
+            toast.error("Invalid params", { description: "Base and quote asset types are required" });
+            return;
+        }
+        if (baseAssetType === quoteAssetType) {
+            toast.error("Invalid params", { description: "Base and quote assets must be different" });
+            return;
+        }
+
+        const network = currentNetwork as "mainnet" | "testnet" | "devnet";
+        const networkKey = network === "devnet" ? "testnet" : network;
+        const deepType = DEEP_COIN_TYPE[networkKey];
+
+        setCreatingPool(true);
+        try {
+            const rpcUrl = network === "mainnet"
+                ? "https://fullnode.mainnet.sui.io:443"
+                : network === "testnet"
+                    ? "https://fullnode.testnet.sui.io:443"
+                    : "https://fullnode.devnet.sui.io:443";
+            const jsonRpcClient = new SuiJsonRpcClient({ network, url: rpcUrl });
+
+            const deepCoins = await jsonRpcClient.getCoins({
+                owner: currentAccount.address,
+                coinType: deepType,
+            });
+            const totalDeep = deepCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+            if (totalDeep < POOL_CREATION_FEE_DEEP) {
+                toast.error("Insufficient DEEP", {
+                    description: `Need 500 DEEP for pool creation. You have ${(Number(totalDeep) / 1e6).toFixed(2)} DEEP.`,
+                });
+                setCreatingPool(false);
+                return;
+            }
+
+            const tx = new Transaction();
+            tx.setSender(currentAccount.address);
+
+            const coinIds = deepCoins.data.map((c) => c.coinObjectId);
+            if (coinIds.length > 1) {
+                tx.mergeCoins(tx.object(coinIds[0]), coinIds.slice(1).map((id) => tx.object(id)));
+            }
+            const [creationFeeCoin] = tx.splitCoins(tx.object(coinIds[0]), [Number(POOL_CREATION_FEE_DEEP)]);
+
+            createPermissionlessPool(tx, {
+                baseAssetType,
+                quoteAssetType,
+                tickSize,
+                lotSize,
+                minSize,
+                creationFeeCoin,
+            }, network);
+
+            tx.transferObjects([tx.object(coinIds[0])], currentAccount.address);
+
+            const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
+            if (result.$kind === "FailedTransaction") throw new Error("Transaction failed");
+            toast.success("DeepBook pool created successfully");
+            loadDeepbookPools();
+        } catch (error) {
+            console.error("Create pool failed:", error);
+            toast.error("Create pool failed", {
+                description: error instanceof Error ? error.message : "Unknown error",
+            });
+        } finally {
+            setCreatingPool(false);
+        }
+    };
+
     const formatDate = (timestamp: number) => {
         return new Date(timestamp).toLocaleDateString("en-US", {
             year: "numeric",
@@ -602,6 +686,95 @@ export function OptionsPage() {
                     {!currentAccount && <ConnectButton />}
                 </div>
 
+                {currentAccount && (
+                    <Card className="overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <PlusCircle className="h-5 w-5" />
+                                Create Permissionless DeepBook Pool
+                            </CardTitle>
+                            <CardDescription>
+                                Create a new DeepBook pool for any BaseAsset/QuoteAsset pair. Requires 500 DEEP as creation fee. Tick size, lot size, and min size must be powers of 10.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs text-muted-foreground uppercase font-bold">Base Asset Type</label>
+                                    <input
+                                        type="text"
+                                        value={createPoolForm.baseAssetType}
+                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, baseAssetType: e.target.value }))}
+                                        placeholder="0x...::module::TYPE"
+                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm font-mono focus:ring-1 focus:ring-primary outline-none"
+                                    />
+                                    {PUBLISHED_OPTIONS.length > 0 && (
+                                        <select
+                                            className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                            onChange={(e) => {
+                                                const opt = PUBLISHED_OPTIONS.find((o) => o.optionTokenType === e.target.value);
+                                                if (opt) setCreatePoolForm((p) => ({ ...p, baseAssetType: opt.optionTokenType }));
+                                            }}
+                                        >
+                                            <option value="">Or select option token...</option>
+                                            {PUBLISHED_OPTIONS.map((o) => (
+                                                <option key={o.id} value={o.optionTokenType}>{o.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-muted-foreground uppercase font-bold">Quote Asset Type</label>
+                                    <select
+                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        value={createPoolForm.quoteAssetType}
+                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, quoteAssetType: e.target.value }))}
+                                    >
+                                        <option value="0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>
+                                        <option value="0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC">USDC (testnet)</option>
+                                        <option value="0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC">USDC (mainnet)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs text-muted-foreground uppercase font-bold">Tick Size</label>
+                                    <input
+                                        type="number"
+                                        value={createPoolForm.tickSize}
+                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, tickSize: parseInt(e.target.value) || 1000 }))}
+                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-muted-foreground uppercase font-bold">Lot Size (≥1000)</label>
+                                    <input
+                                        type="number"
+                                        value={createPoolForm.lotSize}
+                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, lotSize: parseInt(e.target.value) || 1000 }))}
+                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs text-muted-foreground uppercase font-bold">Min Size</label>
+                                    <input
+                                        type="number"
+                                        value={createPoolForm.minSize}
+                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, minSize: parseInt(e.target.value) || 10000 }))}
+                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleCreatePermissionlessPool}
+                                disabled={creatingPool || !createPoolForm.baseAssetType || !createPoolForm.quoteAssetType}
+                                loading={creatingPool}
+                            >
+                                {creatingPool ? "Creating..." : "Create Pool (500 DEEP)"}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {PUBLISHED_OPTIONS.map((option) => (
