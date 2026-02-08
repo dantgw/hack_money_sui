@@ -29,23 +29,39 @@ interface OptionPool {
 }
 
 // Example option pools - in production, these would be fetched from on-chain
-const EXAMPLE_OPTIONS: OptionPool[] = [
-    {
-        id: "0x77a55a7f355f449db59fa7de7f957c79c211a0a893f7ba01115cf2e9c00db58e",
-        packageId: "0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41695ca146aae8",
-        name: "CALL DEEP/SUI Strike 0.03",
-        type: "CALL",
-        strikePrice: 0.03,
-        expirationDate: 1798761600000, // Jan 1, 2027
-        baseAsset: "DEEP",
-        quoteAsset: "SUI",
-        // optionTokenType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
-        optionTokenType: "0x90ebb5c0022ffe4c504f122bc3035b7fda9858464be430a58a41695ca146aae8::call_deep_sui_30000000_exp20270101::CALL_DEEP_SUI_30000000_EXP20270101",
-        baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
-        quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
-        deepbookPoolName: "DEEP_SUI",
-        optionTokenDecimals: 6,
-    },
+const PUBLISHED_OPTIONS: OptionPool[] = [
+    // {
+    //     id: "0x7410d17a4d65707149a919737faf0925423e4d517759d5b212b8878fb4c39af0",
+    //     packageId: "0xc89c88f32b562e349c15f1c1e9c2c37eb64135e9730b8f8b75492ac72886f55e",
+    //     name: "CALL DEEP/SUI Strike 0.10",
+    //     type: "CALL",
+    //     strikePrice: 0.1,
+    //     expirationDate: 1798761600000, // Jan 1, 2027
+    //     baseAsset: "DEEP",
+    //     quoteAsset: "SUI",
+    //     // optionTokenType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+    //     optionTokenType: "0xc89c88f32b562e349c15f1c1e9c2c37eb64135e9730b8f8b75492ac72886f55e::call_deep_sui_100000000_exp20270101::CALL_DEEP_SUI_100000000_EXP20270101",
+    //     baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+    //     quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
+    //     deepbookPoolName: "DEEP_SUI",
+    //     optionTokenDecimals: 6,
+    // },
+    // {
+    //     id: "0xfdc1eeb2d3737062be9bc050bb5080957f0f99169e6c11edf08a023fa4c1a7c8",
+    //     packageId: "0xa924a8a13285caf94e162ee7bceb87ee407c8e645058ff6c7e0c4afc8dd55e29",
+    //     name: "CALL DEEP/SUI Strike 0.03",
+    //     type: "CALL",
+    //     strikePrice: 0.03,
+    //     expirationDate: 1798761600000, // Jan 1, 2027
+    //     baseAsset: "DEEP",
+    //     quoteAsset: "SUI",
+    //     // optionTokenType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+    //     optionTokenType: "0xa924a8a13285caf94e162ee7bceb87ee407c8e645058ff6c7e0c4afc8dd55e29::call_deep_sui_30000000_exp20270101::CALL_DEEP_SUI_30000000_EXP20270101",
+    //     baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+    //     quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
+    //     deepbookPoolName: "DEEP_SUI",
+    //     optionTokenDecimals: 6,
+    // },
     {
         id: "0x48dec36157e3073bb5b0a41f9628a26a2b63929f70858271fc0698cee83545ec",
         packageId: "0x33083f7f56ad45645c8f17c6b92af2ccc38dda29202a52d86de3daaa137aec86",
@@ -61,21 +77,21 @@ const EXAMPLE_OPTIONS: OptionPool[] = [
         deepbookPoolName: "DEEP_SUI",
         optionTokenDecimals: 6,
     },
-    {
-        id: "0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c",
-        packageId: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427",
-        name: "PUT DEEP/SUI Strike 0.03",
-        type: "PUT",
-        strikePrice: 0.03,
-        expirationDate: 1798761600000, // Jan 1, 2027
-        baseAsset: "DEEP",
-        quoteAsset: "SUI",
-        optionTokenType: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427::put_deep_sui_30000000_exp20270101::PUT_DEEP_SUI_30000000_EXP20270101",
-        baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
-        quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
-        deepbookPoolName: "DEEP_SUI",
-        optionTokenDecimals: 9,
-    },
+    // {
+    //     id: "0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c",
+    //     packageId: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427",
+    //     name: "PUT DEEP/SUI Strike 0.03",
+    //     type: "PUT",
+    //     strikePrice: 0.03,
+    //     expirationDate: 1798761600000, // Jan 1, 2027
+    //     baseAsset: "DEEP",
+    //     quoteAsset: "SUI",
+    //     optionTokenType: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427::put_deep_sui_30000000_exp20270101::PUT_DEEP_SUI_30000000_EXP20270101",
+    //     baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+    //     quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
+    //     deepbookPoolName: "DEEP_SUI",
+    //     optionTokenDecimals: 9,
+    // },
 ];
 
 const PRICE_DECIMALS = 1_000_000_000;
@@ -85,12 +101,13 @@ export function OptionsPage() {
     const dAppKit = useDAppKit();
     const currentNetwork = useCurrentNetwork();
     const [mintingPool, setMintingPool] = useState<string | null>(null);
-    const [collateralAmount, setCollateralAmount] = useState<string>("");
+    const [collateralAmounts, setCollateralAmounts] = useState<Record<string, string>>({});
     const [poolId, setPoolId] = useState<string>("");
     const [updatingPricePool, setUpdatingPricePool] = useState<string | null>(null);
     const [exercisingPool, setExercisingPool] = useState<string | null>(null);
-    const [exerciseAmount, setExerciseAmount] = useState<string>("");
+    const [exerciseAmounts, setExerciseAmounts] = useState<Record<string, string>>({});
     const [deepbookPools, setDeepbookPools] = useState<Map<string, string>>(new Map());
+    const [userTokenBalances, setUserTokenBalances] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const load = async () => {
@@ -102,6 +119,37 @@ export function OptionsPage() {
         };
         load();
     }, [currentNetwork]);
+
+    // Fetch user's option token and owner token balances for each pool
+    const loadUserTokenBalances = async () => {
+        if (!currentAccount?.address) {
+            setUserTokenBalances({});
+            return;
+        }
+        const network = currentNetwork as "mainnet" | "testnet" | "devnet";
+        const rpcUrl = network === "mainnet"
+            ? "https://fullnode.mainnet.sui.io:443"
+            : network === "testnet"
+                ? "https://fullnode.testnet.sui.io:443"
+                : "https://fullnode.devnet.sui.io:443";
+        const jsonRpcClient = new SuiJsonRpcClient({ network, url: rpcUrl });
+        const balances: Record<string, string> = {};
+        for (const option of PUBLISHED_OPTIONS) {
+            const decimals = option.optionTokenDecimals ?? 9;
+            const div = Math.pow(10, decimals);
+            const optionCoins = await jsonRpcClient.getCoins({
+                owner: currentAccount.address,
+                coinType: option.optionTokenType,
+            });
+            const optionBalance = optionCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+            balances[option.id] = (Number(optionBalance) / div).toLocaleString(undefined, { maximumFractionDigits: decimals });
+        }
+        setUserTokenBalances(balances);
+    };
+
+    useEffect(() => {
+        loadUserTokenBalances();
+    }, [currentAccount?.address, currentNetwork]);
 
     const handleMintOptions = async (option: OptionPool) => {
         if (!currentAccount?.address) {
@@ -117,6 +165,7 @@ export function OptionsPage() {
             return;
         }
 
+        const collateralAmount = collateralAmounts[option.id] ?? "";
         if (!collateralAmount || parseFloat(collateralAmount) <= 0) {
             toast.error("Invalid collateral amount", {
                 description: "Please enter a valid collateral amount",
@@ -252,9 +301,14 @@ export function OptionsPage() {
             toast.success("Options minted successfully!", {
                 description: `Minted options with ${collateralAmount} ${collateralAsset} collateral`,
             });
+            loadUserTokenBalances();
 
-            // Clear form
-            setCollateralAmount("");
+            // Clear form for this option
+            setCollateralAmounts((prev) => {
+                const next = { ...prev };
+                delete next[option.id];
+                return next;
+            });
             setPoolId("");
         } catch (error) {
             console.error("Mint failed:", error);
@@ -321,6 +375,7 @@ export function OptionsPage() {
             toast.error("Pool ID is required");
             return;
         }
+        const exerciseAmount = exerciseAmounts[option.id] ?? "";
         const amount = parseFloat(exerciseAmount);
         if (!exerciseAmount || amount <= 0) {
             toast.error("Invalid amount", { description: "Enter amount of options to exercise" });
@@ -396,19 +451,26 @@ export function OptionsPage() {
                     return;
                 }
 
+                const totalOptionBalance = optionCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+                if (totalOptionBalance < amountInBaseUnits) {
+                    toast.error("Insufficient option tokens", { description: `You need at least ${amount} options` });
+                    return;
+                }
+
                 // Split payment from tx.gas - wallet picks a coin for gas, we split payment from it
                 // Keeps our coins unused so wallet can select one for gas; remainder pays gas and returns to user
                 const [paymentCoin] = tx.splitCoins(tx.gas, [Number(requiredPayment)]);
 
-                const optionCoinsWithBalance = optionCoins.data
-                    .filter((c) => BigInt(c.balance) >= amountInBaseUnits)
-                    .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-                if (optionCoinsWithBalance.length === 0) {
-                    toast.error("No single option coin has enough", { description: `You need at least ${amount} options` });
-                    return;
+                // Merge option tokens first, then split the needed amount, then send rest back to owner
+                const optionCoinIds = optionCoins.data.map((c) => c.coinObjectId);
+                if (optionCoinIds.length > 1) {
+                    tx.mergeCoins(
+                        tx.object(optionCoinIds[0]),
+                        optionCoinIds.slice(1).map((id) => tx.object(id))
+                    );
                 }
-                const optionCoinId = optionCoinsWithBalance[0].coinObjectId;
-                const [optionCoin] = tx.splitCoins(tx.object(optionCoinId), [Number(amountInBaseUnits)]);
+                const primaryOptionCoinId = optionCoinIds[0];
+                const [optionCoin] = tx.splitCoins(tx.object(primaryOptionCoinId), [Number(amountInBaseUnits)]);
 
                 const [payoutCoin] = tx.moveCall({
                     target: `${option.packageId}::options_pool::exercise_call_options`,
@@ -422,7 +484,7 @@ export function OptionsPage() {
                 });
                 // Return payout and remainder of option coin; gas coin remainder is returned by wallet
                 tx.transferObjects(
-                    [payoutCoin, tx.object(optionCoinId)],
+                    [payoutCoin, tx.object(primaryOptionCoinId)],
                     currentAccount.address
                 );
             } else {
@@ -438,26 +500,48 @@ export function OptionsPage() {
                     toast.error("No option coins", { description: "You don't have any option tokens to exercise" });
                     return;
                 }
-                if (baseCoins.data.length === 0 || baseCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n) < amountInBaseUnits) {
+                const totalBaseBalance = baseCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+                const totalOptionBalance = optionCoins.data.reduce((s, c) => s + BigInt(c.balance), 0n);
+                if (baseCoins.data.length === 0 || totalBaseBalance < amountInBaseUnits) {
+                    console.log("Insufficient base asset", {
+                        amountInBaseUnits,
+                        baseCoins: baseCoins.data.map((c) => ({
+                            balance: BigInt(c.balance),
+                            coinObjectId: c.coinObjectId,
+                        })),
+                    });
                     toast.error("Insufficient base asset", {
                         description: `You need ${amount} ${option.baseAsset} to exercise`,
                     });
                     return;
                 }
-                const baseCoinsWithBalance = baseCoins.data
-                    .filter((c) => BigInt(c.balance) >= amountInBaseUnits)
-                    .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-                const optionCoinsWithBalance = optionCoins.data
-                    .filter((c) => BigInt(c.balance) >= amountInBaseUnits)
-                    .sort((a, b) => Number(BigInt(b.balance) - BigInt(a.balance)));
-                if (baseCoinsWithBalance.length === 0 || optionCoinsWithBalance.length === 0) {
-                    toast.error("No single coin has enough balance", { description: "Try consolidating" });
+                if (totalOptionBalance < amountInBaseUnits) {
+                    toast.error("Insufficient option tokens", { description: `You need at least ${amount} options` });
                     return;
                 }
-                const baseCoinId = baseCoinsWithBalance[0].coinObjectId;
-                const optionCoinId = optionCoinsWithBalance[0].coinObjectId;
-                const [optionCoin] = tx.splitCoins(tx.object(optionCoinId), [Number(amountInBaseUnits)]);
-                const [baseCoin] = tx.splitCoins(tx.object(baseCoinId), [Number(amountInBaseUnits)]);
+
+                // Merge option tokens first, then split the needed amount, then send rest back to owner
+                const optionCoinIds = optionCoins.data.map((c) => c.coinObjectId);
+                if (optionCoinIds.length > 1) {
+                    tx.mergeCoins(
+                        tx.object(optionCoinIds[0]),
+                        optionCoinIds.slice(1).map((id) => tx.object(id))
+                    );
+                }
+                const primaryOptionCoinId = optionCoinIds[0];
+                const [optionCoin] = tx.splitCoins(tx.object(primaryOptionCoinId), [Number(amountInBaseUnits)]);
+
+                // Merge base asset coins if needed, then split
+                const baseCoinIds = baseCoins.data.map((c) => c.coinObjectId);
+                if (baseCoinIds.length > 1) {
+                    tx.mergeCoins(
+                        tx.object(baseCoinIds[0]),
+                        baseCoinIds.slice(1).map((id) => tx.object(id))
+                    );
+                }
+                const primaryBaseCoinId = baseCoinIds[0];
+                const [baseCoin] = tx.splitCoins(tx.object(primaryBaseCoinId), [Number(amountInBaseUnits)]);
+
                 const [payoutCoin] = tx.moveCall({
                     target: `${option.packageId}::options_pool::exercise_put_options`,
                     typeArguments: [option.optionTokenType, option.baseAssetType, option.quoteAssetType],
@@ -469,7 +553,7 @@ export function OptionsPage() {
                     ],
                 });
                 tx.transferObjects(
-                    [payoutCoin, tx.object(optionCoinId), tx.object(baseCoinId)],
+                    [payoutCoin, tx.object(primaryOptionCoinId), tx.object(primaryBaseCoinId)],
                     currentAccount.address
                 );
             }
@@ -477,7 +561,12 @@ export function OptionsPage() {
             const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
             if (result.$kind === "FailedTransaction") throw new Error("Transaction failed");
             toast.success("Options exercised successfully");
-            setExerciseAmount("");
+            loadUserTokenBalances();
+            setExerciseAmounts((prev) => {
+                const next = { ...prev };
+                delete next[option.id];
+                return next;
+            });
         } catch (error) {
             console.error("Exercise failed:", error);
             toast.error("Exercise failed", {
@@ -515,7 +604,7 @@ export function OptionsPage() {
 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {EXAMPLE_OPTIONS.map((option) => (
+                    {PUBLISHED_OPTIONS.map((option) => (
                         <Card key={option.id || option.name} className="overflow-hidden">
                             <CardHeader>
                                 <div className="flex items-start justify-between">
@@ -566,6 +655,17 @@ export function OptionsPage() {
                                             {isExpired(option.expirationDate) ? "Expired" : "Active"}
                                         </span>
                                     </div>
+                                    {currentAccount && userTokenBalances[option.id] && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground flex items-center gap-1">
+                                                <Zap className="h-3 w-3" />
+                                                Your Option Tokens
+                                            </span>
+                                            <span className="font-medium">
+                                                {userTokenBalances[option.id]}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {currentAccount ? (
@@ -600,8 +700,8 @@ export function OptionsPage() {
                                             </label>
                                             <input
                                                 type="number"
-                                                value={collateralAmount}
-                                                onChange={(e) => setCollateralAmount(e.target.value)}
+                                                value={collateralAmounts[option.id] ?? ""}
+                                                onChange={(e) => setCollateralAmounts((prev) => ({ ...prev, [option.id]: e.target.value }))}
                                                 placeholder="0.00"
                                                 className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
                                                 disabled={mintingPool === option.id || isExpired(option.expirationDate)}
@@ -612,20 +712,13 @@ export function OptionsPage() {
                                             disabled={
                                                 mintingPool === option.id ||
                                                 isExpired(option.expirationDate) ||
-                                                !collateralAmount ||
-                                                parseFloat(collateralAmount) <= 0
+                                                !(collateralAmounts[option.id] ?? "") ||
+                                                parseFloat(collateralAmounts[option.id] ?? "0") <= 0
                                             }
                                             className="w-full"
                                             loading={mintingPool === option.id}
                                         >
-                                            {mintingPool === option.id ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Minting...
-                                                </>
-                                            ) : (
-                                                "Mint Options"
-                                            )}
+                                            {mintingPool === option.id ? "Minting..." : "Mint Options"}
                                         </Button>
 
                                         <div className="space-y-1.5 pt-2 border-t">
@@ -634,8 +727,8 @@ export function OptionsPage() {
                                             </label>
                                             <input
                                                 type="number"
-                                                value={exerciseAmount}
-                                                onChange={(e) => setExerciseAmount(e.target.value)}
+                                                value={exerciseAmounts[option.id] ?? ""}
+                                                onChange={(e) => setExerciseAmounts((prev) => ({ ...prev, [option.id]: e.target.value }))}
                                                 placeholder="Amount to exercise"
                                                 className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
                                                 disabled={exercisingPool === option.id || isExpired(option.expirationDate)}
@@ -646,17 +739,14 @@ export function OptionsPage() {
                                                 disabled={
                                                     exercisingPool === option.id ||
                                                     isExpired(option.expirationDate) ||
-                                                    !exerciseAmount ||
-                                                    parseFloat(exerciseAmount) <= 0
+                                                    !(exerciseAmounts[option.id] ?? "") ||
+                                                    parseFloat(exerciseAmounts[option.id] ?? "0") <= 0
                                                 }
                                                 className="w-full"
                                                 loading={exercisingPool === option.id}
                                             >
                                                 {exercisingPool === option.id ? (
-                                                    <>
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                        Exercising...
-                                                    </>
+                                                    "Exercising..."
                                                 ) : (
                                                     <>
                                                         <Zap className="h-4 w-4" />
@@ -678,7 +768,7 @@ export function OptionsPage() {
                     ))}
                 </div>
 
-                {EXAMPLE_OPTIONS.length === 0 && (
+                {PUBLISHED_OPTIONS.length === 0 && (
                     <Card className="p-8 text-center">
                         <p className="text-muted-foreground">No options available</p>
                     </Card>
