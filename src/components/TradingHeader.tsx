@@ -1,6 +1,20 @@
 import { MarketPrice, PoolInfo } from '../lib/deepbook';
 
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '../lib/utils';
+
+import deepLogo from '../assets/deep-logo.png';
+import suiLogo from '../assets/sui-logo.png';
+import usdcLogo from '../assets/usdc-logo.png';
+import walrusLogo from '../assets/walrus-logo.webp';
+
+const ASSET_LOGOS: Record<string, string> = {
+    DEEP: deepLogo,
+    SUI: suiLogo,
+    USDC: usdcLogo,
+    WAL: walrusLogo,
+    WALRUS: walrusLogo,
+};
 
 interface TradingHeaderProps {
     poolInfo: PoolInfo;
@@ -16,8 +30,15 @@ export function TradingHeader({ poolInfo, marketPrice, network, onOpenSelector, 
             <div className="flex items-center space-x-3 sm:space-x-6 pl-1 sm:pl-2 min-w-0 flex-1">
                 <div className="flex items-center space-x-1 group cursor-pointer min-h-[44px] touch-manipulation py-1" onClick={onOpenSelector}>
                     <div className="flex items-center space-x-2 mr-1">
-                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px]">
-                            {poolInfo.baseCoin[0]}
+                        <div className={cn(
+                            "w-6 h-6 rounded-full overflow-hidden flex items-center justify-center shrink-0",
+                            !ASSET_LOGOS[poolInfo.baseCoin] && "bg-orange-500"
+                        )}>
+                            {ASSET_LOGOS[poolInfo.baseCoin] ? (
+                                <img src={ASSET_LOGOS[poolInfo.baseCoin]} alt={poolInfo.baseCoin} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-white font-bold text-[10px]">{poolInfo.baseCoin[0]}</span>
+                            )}
                         </div>
                         <div className="font-bold text-base transition-colors group-hover:text-primary">
                             {poolInfo.baseCoin}-{poolInfo.quoteCoin}
