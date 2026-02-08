@@ -8,7 +8,7 @@ import {
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { OrderBook } from './OrderBook';
 import { OrderPanel } from './OrderPanel';
 import { AccountPanel } from './AccountPanel';
@@ -31,6 +31,7 @@ export function DeepBookTrading() {
   const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
   const [tradeDrawerOpen, setTradeDrawerOpen] = useState(false);
   const [tradeDrawerSide, setTradeDrawerSide] = useState<'buy' | 'sell'>('buy');
+  const [orderBookExpanded, setOrderBookExpanded] = useState(false);
 
   useEffect(() => {
     const loadPools = async () => {
@@ -365,34 +366,48 @@ export function DeepBookTrading() {
         </div>
       </div>
 
-      {/* Mobile trade drawer — Order form + Order Book (Coinbase-style) */}
+      {/* Mobile trade drawer — Order form + Order Book */}
       <BottomSheet
         open={tradeDrawerOpen}
         onClose={() => setTradeDrawerOpen(false)}
         title={selectedPoolInfo ? `${selectedPoolInfo.baseCoin}-${selectedPoolInfo.quoteCoin}` : undefined}
       >
-        <div className="flex flex-col gap-4 pb-6">
+        <div className="flex flex-col gap-2 pb-6">
           <div className="px-4">
             <OrderPanel
               poolInfo={selectedPoolInfo || null}
               currentPrice={marketPrice?.midPrice || 0}
               selectedPriceFromOrderBook={selectedPriceFromOrderBook}
               initialSide={tradeDrawerSide}
+              compact
             />
           </div>
-          <div className="border-t pt-4">
-            <h4 className="px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-              Order Book
-            </h4>
-            <div className="min-h-[200px] overflow-auto">
-              <OrderBook
-                poolName={selectedPool || ''}
-                network={network}
-                onSelectPrice={(price) => {
-                  setSelectedPriceFromOrderBook(price);
-                }}
-              />
-            </div>
+          <div className="border-t">
+            <button
+              type="button"
+              onClick={() => setOrderBookExpanded(!orderBookExpanded)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
+            >
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Order Book
+              </h4>
+              {orderBookExpanded ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+            </button>
+            {orderBookExpanded && (
+              <div className="min-h-[180px] max-h-[240px] overflow-auto">
+                <OrderBook
+                  poolName={selectedPool || ''}
+                  network={network}
+                  onSelectPrice={(price) => {
+                    setSelectedPriceFromOrderBook(price);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </BottomSheet>
