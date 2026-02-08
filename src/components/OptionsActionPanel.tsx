@@ -76,11 +76,10 @@ export function OptionsActionPanel({
                                     </p>
                                 </div>
                                 <span
-                                    className={`px-2 py-0.5 rounded text-xs font-semibold shrink-0 ${
-                                        selectedOption.type === "CALL"
-                                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                                            : "bg-red-500/20 text-red-600 dark:text-red-400"
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-xs font-semibold shrink-0 ${selectedOption.type === "CALL"
+                                            ? "bg-primary/20 text-primary"
+                                            : "bg-destructive/20 text-destructive"
+                                        }`}
                                 >
                                     {selectedOption.type}
                                 </span>
@@ -103,7 +102,7 @@ export function OptionsActionPanel({
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">Status</span>
-                                <span className={`font-medium ${expired ? "text-red-500" : "text-green-500"}`}>
+                                <span className={`font-medium ${expired ? "text-sell" : "text-primary"}`}>
                                     {expired ? "Expired" : "Active"}
                                 </span>
                             </div>
@@ -177,7 +176,7 @@ export function OptionsActionPanel({
                                         {selectedOption.type === "CALL"
                                             ? `Pay ${selectedOption.quoteAsset}, get ${selectedOption.baseAsset}`
                                             : `Sell ${selectedOption.baseAsset}, get ${selectedOption.quoteAsset}`}
-                                    )
+                                        )
                                     </label>
                                     <input
                                         type="number"

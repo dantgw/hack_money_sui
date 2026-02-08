@@ -146,12 +146,12 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
 
     return (
         <div className="flex flex-col h-full bg-background">
-            <div className="flex border-b-2 border-border shrink-0 font-display">
+            <div className="flex border-b border-border shrink-0 font-display">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 py-2.5 px-2 sm:p-2 text-xs font-bold transition-colors border-b-2 -mb-[2px] min-h-[44px] touch-manipulation ${activeTab === tab.id
+                        className={`flex-1 py-2.5 px-2 sm:p-2 text-xs font-bold uppercase transition-colors border-b-2 -mb-[2px] min-h-[44px] touch-manipulation rounded-t-lg ${activeTab === tab.id
                             ? 'border-primary text-primary'
                             : 'border-transparent text-muted-foreground hover:text-foreground active:bg-muted/50'
                             }`}
@@ -191,7 +191,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {openOrders.map((order) => {
-                                            const sideColor = order.side === 'buy' ? 'text-primary' : 'text-destructive';
+                                            const sideColor = order.side === 'buy' ? 'text-buy' : 'text-sell';
                                             const isCanceling = cancelingOrderId === order.order_id;
                                             const quoteSymbol = poolInfo?.quoteCoin || 'USDC';
                                             const baseSymbol = poolInfo?.baseCoin || 'SUI';
@@ -263,7 +263,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                     </thead>
                                     <tbody className="divide-y">
                                         {orders.map((order) => {
-                                            const sideColor = order.side === 'buy' ? 'text-primary' : 'text-destructive';
+                                            const sideColor = order.side === 'buy' ? 'text-buy' : 'text-sell';
                                             const quoteSymbol = poolInfo?.quoteCoin || 'USDC';
                                             const baseSymbol = poolInfo?.baseCoin || 'SUI';
 

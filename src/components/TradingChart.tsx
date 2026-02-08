@@ -233,25 +233,25 @@ export function TradingChart({
                 height,
                 autoSize: true, // Handles mobile resize; uses ResizeObserver internally
                 layout: {
-                    background: { type: ColorType.Solid, color: '#0d1210' },
-                    textColor: '#e8e6e1',
+                    background: { type: ColorType.Solid, color: '#0f1419' },
+                    textColor: '#e7e5e2',
                 },
                 grid: {
-                    vertLines: { color: '#1e2824' },
-                    horzLines: { color: '#1e2824' },
+                    vertLines: { color: '#252b33' },
+                    horzLines: { color: '#252b33' },
                 },
                 crosshair: {
                     mode: 1,
                 },
                 rightPriceScale: {
-                    borderColor: '#2a332e',
+                    borderColor: '#404040',
                     scaleMargins: {
                         top: 0.1,
                         bottom: 0.1,
                     },
                 },
                 timeScale: {
-                    borderColor: '#2a332e',
+                    borderColor: '#404040',
                     timeVisible: true,
                     secondsVisible: false,
                     rightOffset: 10,
@@ -266,13 +266,13 @@ export function TradingChart({
 
             chartRef.current = chart;
 
-            // Add candlestick series (logo palette: primary green for up, destructive red for down)
+            // Add candlestick series (bold palette: green for up, red for down)
             const candlestickSeries = chart.addSeries(CandlestickSeries, {
-                upColor: '#22c55e',
-                downColor: '#ef4444',
+                upColor: '#4ade80',
+                downColor: '#f87171',
                 borderVisible: false,
-                wickUpColor: '#22c55e',
-                wickDownColor: '#ef4444',
+                wickUpColor: '#4ade80',
+                wickDownColor: '#f87171',
             });
 
             seriesRef.current = candlestickSeries;
@@ -549,7 +549,7 @@ export function TradingChart({
                 <button
                     onClick={() => handleIntervalClick('5m')}
                     className={cn(
-                        "px-2.5 py-1 text-xs font-medium rounded transition-colors",
+                        "px-2.5 py-1 text-xs font-bold uppercase rounded-lg border border-transparent transition-colors",
                         interval === '5m'
                             ? "bg-primary text-primary-foreground"
                             : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
@@ -560,7 +560,7 @@ export function TradingChart({
                 <button
                     onClick={() => handleIntervalClick('1h')}
                     className={cn(
-                        "px-2.5 py-1 text-xs font-medium rounded transition-colors",
+                        "px-2.5 py-1 text-xs font-bold uppercase rounded-lg border border-transparent transition-colors",
                         interval === '1h'
                             ? "bg-primary text-primary-foreground"
                             : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
@@ -571,7 +571,7 @@ export function TradingChart({
                 <button
                     onClick={() => handleIntervalClick('1d')}
                     className={cn(
-                        "px-2.5 py-1 text-xs font-medium rounded transition-colors",
+                        "px-2.5 py-1 text-xs font-bold uppercase rounded-lg border border-transparent transition-colors",
                         interval === '1d'
                             ? "bg-primary text-primary-foreground"
                             : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
@@ -583,7 +583,7 @@ export function TradingChart({
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className={cn(
-                            "px-2 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1",
+                            "px-2 py-1 text-xs font-bold uppercase rounded-lg border border-transparent transition-colors flex items-center gap-1",
                             isDropdownOpen
                                 ? "bg-white/10 text-foreground"
                                 : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
@@ -592,7 +592,7 @@ export function TradingChart({
                         <ChevronDown className="w-3 h-3" />
                     </button>
                     {isDropdownOpen && (
-                        <div className="absolute top-full left-0 mt-1 bg-card border-2 border-border rounded-lg shadow-lg overflow-hidden min-w-[80px] z-50">
+                        <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-clay overflow-hidden min-w-[80px] z-50">
                             {INTERVAL_OPTIONS.map((option) => (
                                 <button
                                     key={option.value}

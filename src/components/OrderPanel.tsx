@@ -519,16 +519,16 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                     {compact ? (
                         /* Compact: Buy/Sell + Order type dropdown on same row */
                         <div className="flex gap-2 items-stretch">
-                            <div className="flex flex-1 min-w-0 h-[44px] rounded-lg bg-muted p-1 border-2 border-border">
+                            <div className="flex flex-1 min-w-0 h-[44px] rounded-xl bg-muted p-1 border border-border shadow-clay-sm">
                                 <button
                                     onClick={() => setSide('buy')}
-                                    className={cn("flex-1 min-h-0 h-full text-sm font-display font-bold rounded-md transition-all touch-manipulation", side === 'buy' ? 'bg-primary text-primary-foreground shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                    className={cn("flex-1 min-h-0 h-full text-sm font-display font-bold uppercase rounded-lg transition-all touch-manipulation", side === 'buy' ? 'bg-buy text-buy-foreground shadow-clay-sm' : 'hover:text-foreground/80 active:bg-muted')}
                                 >
                                     Buy
                                 </button>
                                 <button
                                     onClick={() => setSide('sell')}
-                                    className={cn("flex-1 min-h-0 h-full text-sm font-display font-bold rounded-md transition-all touch-manipulation", side === 'sell' ? 'bg-destructive text-destructive-foreground shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                    className={cn("flex-1 min-h-0 h-full text-sm font-display font-bold uppercase rounded-lg transition-all touch-manipulation", side === 'sell' ? 'bg-sell text-sell-foreground shadow-clay-sm' : 'hover:text-foreground/80 active:bg-muted')}
                                 >
                                     Sell
                                 </button>
@@ -537,7 +537,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                 <select
                                     value={orderType}
                                     onChange={(e) => setOrderType(e.target.value as 'market' | 'limit')}
-                                    className="h-[44px] pl-3 pr-9 rounded-lg bg-muted border-2 border-border text-sm font-display font-semibold appearance-none cursor-pointer focus:ring-2 focus:ring-primary outline-none min-w-[100px]"
+                                    className="h-[44px] pl-3 pr-9 rounded-xl bg-muted border border-border text-sm font-display font-bold uppercase appearance-none cursor-pointer focus:ring-2 focus:ring-primary outline-none min-w-[100px] shadow-clay-sm"
                                 >
                                     <option value="market">Market</option>
                                     <option value="limit">Limit</option>
@@ -548,30 +548,30 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                     ) : (
                         /* Desktop: Order type tabs then Buy/Sell */
                         <>
-                            <div className="flex w-full text-xs border-b-2 border-border font-display">
+                            <div className="flex w-full text-xs border-b border-border font-display">
                                 <button
                                     onClick={() => setOrderType('market')}
-                                    className={cn("flex-1 py-2 font-bold transition-colors border-b-2", orderType === 'market' ? '!border-primary text-primary -mb-[2px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
+                                    className={cn("flex-1 py-2 font-bold uppercase transition-colors border-b-2", orderType === 'market' ? '!border-primary text-primary -mb-[2px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
                                 >
                                     Market
                                 </button>
                                 <button
                                     onClick={() => setOrderType('limit')}
-                                    className={cn("flex-1 py-2 font-bold transition-colors border-b-2", orderType === 'limit' ? '!border-primary text-primary -mb-[2px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
+                                    className={cn("flex-1 py-2 font-bold uppercase transition-colors border-b-2", orderType === 'limit' ? '!border-primary text-primary -mb-[2px]' : '!border-transparent text-muted-foreground hover:text-foreground')}
                                 >
                                     Limit
                                 </button>
                             </div>
-                            <div className="flex rounded-lg bg-muted p-1 border-2 border-border">
+                            <div className="flex rounded-xl bg-muted p-1 border border-border shadow-clay-sm">
                                 <button
                                     onClick={() => setSide('buy')}
-                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-display font-bold rounded-md transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-primary text-primary-foreground shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-display font-bold uppercase rounded-lg transition-all min-h-[44px] touch-manipulation", side === 'buy' ? 'bg-buy text-buy-foreground shadow-clay-sm' : 'hover:text-foreground/80 active:bg-muted')}
                                 >
                                     Buy
                                 </button>
                                 <button
                                     onClick={() => setSide('sell')}
-                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-display font-bold rounded-md transition-all min-h-[44px] touch-manipulation", side === 'sell' ? 'bg-destructive text-destructive-foreground shadow' : 'hover:text-foreground/80 active:bg-muted')}
+                                    className={cn("flex-1 py-2.5 sm:py-1.5 text-sm font-display font-bold uppercase rounded-lg transition-all min-h-[44px] touch-manipulation", side === 'sell' ? 'bg-sell text-sell-foreground shadow-clay-sm' : 'hover:text-foreground/80 active:bg-muted')}
                                 >
                                     Sell
                                 </button>
@@ -587,7 +587,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                         type="number"
                                         value={price}
                                         onChange={(e) => setPrice(e.target.value)}
-                                        className="w-full bg-muted/50 border-2 border-border rounded-lg p-2 text-sm tabular-nums focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                        className="w-full bg-muted/50 border border-border rounded-lg p-2 text-sm tabular-nums focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                                         placeholder="0.0000"
                                     />
                                     <button
@@ -607,7 +607,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                 min={10}
                                 value={size}
                                 onChange={(e) => setSize(e.target.value)}
-                                className="w-full bg-muted/50 border-2 border-border rounded-lg p-2 text-sm tabular-nums focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                className="w-full bg-muted/50 border border-border rounded-lg p-2 text-sm tabular-nums focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                                 placeholder="0.00"
                             />
                         </div>
@@ -635,7 +635,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                             <Button
                                 onClick={handlePlaceOrder}
                                 disabled={isPlacingOrder || !poolInfo || !balanceManager || !size || (orderType === 'limit' && !price)}
-                                className={`w-full font-display font-bold uppercase min-h-[44px] touch-manipulation py-3 sm:py-2 border-2 ${side === 'buy' ? 'bg-primary hover:bg-primary/90 border-primary' : 'bg-destructive hover:bg-destructive/90 border-destructive'}`}
+                                className={`w-full font-display font-bold uppercase min-h-[44px] touch-manipulation py-3 sm:py-2 rounded-xl border border-border shadow-clay hover:shadow-clay-sm active:shadow-none ${side === 'buy' ? 'bg-buy hover:bg-buy/90' : 'bg-sell hover:bg-sell/90'}`}
                             >
                                 {isPlacingOrder ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -672,7 +672,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
 
             {/* BalanceManager Section */}
             {currentAccount && (
-                <div className={cn("border-t bg-muted/30", compact ? "p-3 mb-4" : "p-4 space-y-4 mb-8")}>
+                <div className={cn("border-t border-border bg-muted/30", compact ? "p-3 mb-4" : "p-4 space-y-4 mb-8")}>
                     <button
                         type="button"
                         onClick={() => compact && setBalanceManagerExpanded(!balanceManagerExpanded)}
@@ -721,14 +721,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
 
                             <div className={cn("space-y-2", compact && "mt-3")}>
                                 <Button
-                                    className={cn("w-full rounded-md text-sm font-semibold", compact ? "py-2" : "py-2.5")}
+                                    className={cn("w-full text-sm", compact ? "py-2" : "py-2.5")}
                                     onClick={() => setIsDepositModalOpen(true)}
                                     disabled={isDepositing}
                                 >
                                     Deposit
                                 </Button>
                                 <Button
-                                    className={cn("flex-1 rounded-md text-sm", compact ? "w-full py-2" : "py-2")}
+                                    className={cn("flex-1 text-sm", compact ? "w-full py-2" : "py-2")}
                                     variant="outline"
                                     onClick={() => setIsWithdrawModalOpen(true)}
                                     disabled={isWithdrawing || !balanceManager}
@@ -744,10 +744,10 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
             {/* Deposit Modal */}
             {isDepositModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl max-h-[90vh] overflow-y-auto">
+                    <div className="w-full max-w-md rounded-xl border border-border bg-background shadow-clay-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
-                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-primary/10">
                                     <span className="text-2xl">$</span>
                                 </div>
                                 <h2 className="text-lg font-semibold">
@@ -768,7 +768,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Asset
                                 </label>
                                 <select
-                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                                     value="SUI"
                                     disabled
                                 >
@@ -784,14 +784,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     type="number"
                                     value={depositAmount}
                                     onChange={(e) => setDepositAmount(e.target.value)}
-                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                                     placeholder="0.00"
                                     disabled={isDepositing}
                                 />
                             </div>
 
                             <Button
-                                className="mt-2 w-full rounded-md py-2.5 text-sm font-semibold"
+                                className="mt-2 w-full rounded-lg py-2.5 text-sm font-semibold"
                                 disabled={!depositAmount || isDepositing}
                                 onClick={async () => {
                                     const ok = await handleDeposit();
@@ -807,7 +807,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                 )}
                             </Button>
 
-                            <p className="mt-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+                            <p className="mt-2 rounded-lg border border-sell/60 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
                                 IMPORTANT: This balance manager currently only accepts native SUI deposits. Do not send other assets.
                             </p>
                         </div>
@@ -818,10 +818,10 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
             {/* Withdraw Modal */}
             {isWithdrawModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-background shadow-xl max-h-[90vh] overflow-y-auto">
+                    <div className="w-full max-w-md rounded-xl border border-border bg-background shadow-clay-lg max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between px-6 pt-6">
                             <div className="mx-auto text-center">
-                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-primary/10">
                                     <span className="text-2xl">$</span>
                                 </div>
                                 <h2 className="text-lg font-semibold">
@@ -842,7 +842,7 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     Asset
                                 </label>
                                 <select
-                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                                     value="SUI"
                                     disabled
                                 >
@@ -858,14 +858,14 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                                     type="number"
                                     value={withdrawAmount}
                                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                                    className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                                     placeholder="0.00"
                                     disabled={isWithdrawing}
                                 />
                             </div>
 
                             <Button
-                                className="mt-2 w-full rounded-md py-2.5 text-sm font-semibold"
+                                className="mt-2 w-full rounded-lg py-2.5 text-sm font-semibold"
                                 disabled={!withdrawAmount || isWithdrawing || !balanceManager}
                                 onClick={async () => {
                                     const ok = await handleWithdraw();

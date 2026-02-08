@@ -86,7 +86,7 @@ export function OptionsChain({
             <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-3 shrink-0">
                 {/* Calls label — hidden on mobile (duplicated in section headers) */}
                 <div className="hidden lg:flex items-center gap-2">
-                    <span className="font-semibold text-green-600 dark:text-green-400">Calls</span>
+                    <span className="font-semibold text-buy">Calls</span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
 
@@ -133,7 +133,7 @@ export function OptionsChain({
                 {/* Puts label — hidden on mobile (duplicated in section headers) */}
                 <div className="hidden lg:flex items-center gap-2">
                     <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-semibold text-red-600 dark:text-red-400">Puts</span>
+                    <span className="font-semibold text-sell">Puts</span>
                 </div>
             </div>
 
@@ -143,7 +143,7 @@ export function OptionsChain({
                     {/* Mobile: vertical split — Calls above, Puts below */}
                     <div className="lg:hidden space-y-4 p-2">
                         <div>
-                            <div className="text-green-600 dark:text-green-400 font-semibold text-xs px-2 py-1.5 border-b">
+                            <div className="text-buy font-semibold text-xs px-2 py-1.5 border-b">
                                 Calls
                             </div>
                             <table className="w-full border-collapse [&_td]:border-0 [&_th]:border-0">
@@ -166,7 +166,7 @@ export function OptionsChain({
                                                 className={cn(
                                                     "border-b border-border/50 hover:bg-muted/30 transition-colors",
                                                     call && "cursor-pointer",
-                                                    isRowSelected && "bg-primary/15"
+                                                    isRowSelected && "bg-buy/15"
                                                 )}
                                             >
                                                 <td className="py-2 px-2 font-medium">{formatStrike(strike)}</td>
@@ -187,7 +187,7 @@ export function OptionsChain({
                             </table>
                         </div>
                         <div>
-                            <div className="text-red-600 dark:text-red-400 font-semibold text-xs px-2 py-1.5 border-b">
+                            <div className="text-sell font-semibold text-xs px-2 py-1.5 border-b">
                                 Puts
                             </div>
                             <table className="w-full border-collapse [&_td]:border-0 [&_th]:border-0">
@@ -210,7 +210,7 @@ export function OptionsChain({
                                                 className={cn(
                                                     "border-b border-border/50 hover:bg-muted/30 transition-colors",
                                                     put && "cursor-pointer",
-                                                    isRowSelected && "bg-primary/15"
+                                                    isRowSelected && "bg-buy/15"
                                                 )}
                                             >
                                                 <td className="py-2 px-2 font-medium">{formatStrike(strike)}</td>
@@ -319,9 +319,9 @@ function CallPutCells({
     const cellClass = cn(
         "py-2 px-2 transition-colors",
         !selectionOnRow && "cursor-pointer",
-        !selectionOnRow && isSelected && "bg-primary/15 ring-1 ring-primary/50",
+        !selectionOnRow && isSelected && "bg-buy/15 ring-1 ring-primary/50",
         selectionOnRow && "cursor-pointer",
-        isExpired && option && "text-red-500"
+        isExpired && option && "text-sell"
     );
     const alignClass = isCall ? "text-left" : "text-right";
     const colCount = mobile ? 3 : 5;

@@ -1,34 +1,40 @@
 @import "tailwindcss";
 
-/* Varuna theme — meme-y, cartoonish, WSB-inspired (logo palette) */
+/* Claymorphism theme — dark, soft, rounded, trading-ready */
 @theme {
-  /* Distinctive palette: dark forest green undertones, warm cream text */
-  --color-background: #0d1210;
-  --color-foreground: #f0ede8;
-  --color-card: #111916;
-  --color-card-foreground: #f0ede8;
-  --color-primary: #22c55e;
-  --color-primary-foreground: #0d1210;
-  --color-secondary: #161d19;
-  --color-secondary-foreground: #f0ede8;
-  --color-muted: #1e2824;
-  --color-muted-foreground: #8a9288;
-  --color-accent: #fef08a;
-  --color-accent-foreground: #0d1210;
+  /* Dark palette — high contrast, readable */
+  --color-background: #16181d;
+  --color-foreground: #e8e6e3;
+  --color-card: #1e2128;
+  --color-card-foreground: #e8e6e3;
+  /* Accent: soft amber/gold — distinct from green, works for trading */
+  --color-primary: #d4a84b;
+  --color-primary-foreground: #16181d;
+  --color-secondary: #252931;
+  --color-secondary-foreground: #e8e6e3;
+  --color-muted: #252931;
+  --color-muted-foreground: #9ca3af;
+  --color-accent: #d4a84b;
+  --color-accent-foreground: #16181d;
   --color-destructive: #ef4444;
-  --color-destructive-foreground: #f0ede8;
-  --color-border: #2a332e;
-  --color-input: #2a332e;
-  --color-ring: #22c55e;
+  --color-destructive-foreground: #ffffff;
+  /* Trading semantics: buy=green, sell=red */
+  --color-buy: #4ade80;
+  --color-buy-foreground: #16181d;
+  --color-sell: #f87171;
+  --color-sell-foreground: #ffffff;
+  --color-border: #2d323b;
+  --color-input: #252931;
+  --color-ring: #d4a84b;
   --color-sui: oklch(0.7 0.2 220);
 
-  /* Chunky corners for cartoon feel */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* Claymorphism: soft rounded corners */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  /* Bold borders for structural elements */
+  /* Claymorphism: subtle borders */
   --border-width: 2px;
 }
 
@@ -36,6 +42,34 @@
 
 * {
   border-color: var(--color-border);
+}
+
+/* Claymorphism: soft inner + outer shadows */
+.shadow-clay {
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.06),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.shadow-clay-sm {
+  box-shadow:
+    inset 1px 1px 2px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.shadow-clay-lg {
+  box-shadow:
+    inset 3px 3px 6px rgba(255, 255, 255, 0.06),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Card-specific: frosted glass effect */
+.bg-card-clay {
+  background: linear-gradient(145deg, rgba(30, 33, 40, 0.9) 0%, rgba(22, 24, 29, 0.95) 100%);
+  backdrop-filter: blur(12px);
 }
 
 /* Ensure dAppKit ConnectButton dropdown/menu appears above fixed bottom nav (z-40) */

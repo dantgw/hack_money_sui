@@ -49,7 +49,7 @@ export function BottomSheet({ open, onClose, children, title, className }: Botto
             {/* Sheet */}
             <div
                 className={cn(
-                    "fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl bg-background shadow-2xl transition-transform duration-300 ease-out lg:hidden",
+                    "fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl border-t border-border bg-background shadow-clay-lg transition-transform duration-300 ease-out lg:hidden",
                     "max-h-[85vh]",
                     open ? "translate-y-0" : "translate-y-full",
                     className
@@ -61,7 +61,7 @@ export function BottomSheet({ open, onClose, children, title, className }: Botto
                 </div>
 
                 {/* Header with close button */}
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-border px-4 pb-3">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 pb-3">
                     {title && (
                         <div className="min-w-0 flex-1 flex items-center">
                             {title}

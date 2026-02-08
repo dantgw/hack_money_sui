@@ -669,7 +669,7 @@ export function OptionsPage() {
     return (
         <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden selection:bg-primary/30">
             {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b-2 border-border bg-background font-display">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-background font-display">
                 <div>
                     <h2 className="text-xl sm:text-2xl font-bold">Options Chain</h2>
                     <p className="text-muted-foreground text-sm mt-0.5">
@@ -682,7 +682,7 @@ export function OptionsPage() {
             {/* Main layout: Options Chain (left) + Action Panel (right) */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-svh">
                 {/* Options Chain */}
-                <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-r-2 border-border">
+                <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-r border-border">
                     {PUBLISHED_OPTIONS.length > 0 ? (
                         <OptionsChain
                             options={PUBLISHED_OPTIONS}
@@ -700,7 +700,7 @@ export function OptionsPage() {
                 </div>
 
                 {/* Action Panel (right) — desktop only; mobile uses bottom sheet */}
-                <div className="hidden lg:flex flex-col min-h-0 border-l-2 border-border lg:w-[320px] xl:w-[400px] shrink-0">
+                <div className="hidden lg:flex flex-col min-h-0 border-l border-border lg:w-[320px] xl:w-[400px] shrink-0">
                     <OptionsActionPanel
                         selectedOption={selectedOption}
                         currentAccount={currentAccount}

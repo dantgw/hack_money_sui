@@ -356,14 +356,14 @@ export function DeepBookTrading() {
           </div>
         </div>
 
-        {/* Mobile: Buy/Sell bar — bold, cartoonish CTAs */}
-        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t-2 border-border">
+        {/* Mobile: Buy/Sell bar — Neubrutalism CTAs */}
+        <div className="lg:hidden fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 px-3 py-2 flex gap-2 bg-background/95 backdrop-blur border-t border-border">
           <button
             onClick={() => {
               setTradeDrawerSide('buy');
               setTradeDrawerOpen(true);
             }}
-            className="flex-1 py-3 rounded-lg font-display font-bold text-base bg-primary hover:bg-primary/90 active:brightness-95 text-primary-foreground border-2 border-primary shadow-lg transition-all touch-manipulation"
+            className="flex-1 py-3 rounded-xl font-display font-bold text-base uppercase tracking-wide bg-buy text-buy-foreground border border-border shadow-clay hover:shadow-clay-sm active:shadow-none transition-all touch-manipulation"
           >
             Buy
           </button>
@@ -372,14 +372,14 @@ export function DeepBookTrading() {
               setTradeDrawerSide('sell');
               setTradeDrawerOpen(true);
             }}
-            className="flex-1 py-3 rounded-lg font-display font-bold text-base bg-destructive hover:bg-destructive/90 active:brightness-95 text-destructive-foreground border-2 border-destructive shadow-lg transition-all touch-manipulation"
+            className="flex-1 py-3 rounded-xl font-display font-bold text-base uppercase tracking-wide bg-sell text-sell-foreground border border-border shadow-clay hover:shadow-clay-sm active:shadow-none transition-all touch-manipulation"
           >
             Sell
           </button>
         </div>
 
         {/* Desktop: Order Book (Fixed Width) */}
-        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l-2 border-r-2 border-border bg-background overflow-hidden">
+        <div className="hidden lg:flex w-full lg:w-[320px] xl:w-[400px] shrink-0 flex-col border-l border-r border-border bg-background overflow-hidden">
           <OrderBook
             poolName={selectedPool || ''}
             network={network}
@@ -454,10 +454,10 @@ export function DeepBookTrading() {
         </div>
       </BottomSheet>
 
-      {/* Footer Status Bar — badge style, logo green accent */}
-      <div className="hidden sm:flex h-6 sm:h-7 border-t-2 border-border bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0 font-display">
+      {/* Footer Status Bar — Neubrutalism badge */}
+      <div className="hidden sm:flex h-6 sm:h-7 border-t border-border bg-background items-center px-2 sm:px-3 justify-between text-[10px] text-muted-foreground shrink-0 font-display">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          <div className="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-md border border-primary/50 bg-primary/5">
+          <div className="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border border-border bg-primary/10 shadow-clay-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 animate-pulse" />
             <span className="truncate font-semibold text-primary">Operational</span>
           </div>

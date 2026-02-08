@@ -137,12 +137,12 @@ export function PortfolioChart({
         vertLine: {
           visible: true,
           labelVisible: false,
-          color: "rgba(255,255,255,0.3)",
+          color: "rgba(255,255,255,0.2)",
         },
         horzLine: {
           visible: true,
           labelVisible: false,
-          color: "rgba(255,255,255,0.3)",
+          color: "rgba(255,255,255,0.2)",
         },
       },
       rightPriceScale: {
@@ -160,7 +160,7 @@ export function PortfolioChart({
     const areaColor = isPositive
       ? "rgba(34, 197, 94, 0.4)"
       : "rgba(239, 68, 68, 0.4)";
-    const lineColor = isPositive ? "#22c55e" : "#ef4444";
+    const lineColor = isPositive ? "#4ade80" : "#f87171";
 
     const areaSeries = chart.addSeries(AreaSeries, {
       lineColor,
@@ -207,7 +207,7 @@ export function PortfolioChart({
       if (cancelled) return;
       if (idx >= chartData.length) {
         series.applyOptions({
-          lineColor: dailyChange >= 0 ? "#22c55e" : "#ef4444",
+          lineColor: dailyChange >= 0 ? "#4ade80" : "#f87171",
           topColor:
             dailyChange >= 0
               ? "rgba(34, 197, 94, 0.4)"
