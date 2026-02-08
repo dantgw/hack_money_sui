@@ -62,9 +62,11 @@ interface OrderPanelProps {
     initialSide?: 'buy' | 'sell';
     /** Compact layout for mobile trade drawer (dropdown for order type, collapsible balance) */
     compact?: boolean;
+    /** Called when an order is successfully placed (so AccountPanel can refresh) */
+    onOrderPlaced?: () => void;
 }
 
-export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook, initialSide, compact = false }: OrderPanelProps) {
+export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook, initialSide, compact = false, onOrderPlaced }: OrderPanelProps) {
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
     const dAppKit = useDAppKit();
@@ -487,6 +489,9 @@ export function OrderPanel({ poolInfo, currentPrice, selectedPriceFromOrderBook,
                 description: `${sideLabel} ${size} ${baseSymbol} at ${orderType === 'limit' ? `$${price}` : 'market price'}`,
                 duration: 5000,
             });
+
+            // Notify parent so AccountPanel can refresh orders
+            onOrderPlaced?.();
 
             // Clear form
             setSize('');

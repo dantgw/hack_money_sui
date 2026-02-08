@@ -45,6 +45,7 @@ export function DeepBookTrading() {
   const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
   const [tradeDrawerOpen, setTradeDrawerOpen] = useState(false);
   const [tradeDrawerSide, setTradeDrawerSide] = useState<'buy' | 'sell'>('buy');
+  const [ordersRefreshTrigger, setOrdersRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const loadPools = async () => {
@@ -352,7 +353,7 @@ export function DeepBookTrading() {
 
           {/* Account Panel — Desktop: orders below chart, scrolls when many orders */}
           <div className="hidden lg:block h-[220px] xl:h-[260px] border-t-2 border-border overflow-hidden bg-card/80 backdrop-blur-sm shrink-0">
-            <AccountPanel poolName={selectedPool || ''} />
+            <AccountPanel poolName={selectedPool || ''} refreshTrigger={ordersRefreshTrigger} />
           </div>
         </div>
 
@@ -393,6 +394,7 @@ export function DeepBookTrading() {
             poolInfo={selectedPoolInfo || null}
             currentPrice={marketPrice?.midPrice || 0}
             selectedPriceFromOrderBook={selectedPriceFromOrderBook}
+            onOrderPlaced={() => setTimeout(() => setOrdersRefreshTrigger((t) => t + 1), 2000)}
           />
         </div>
       </div>
@@ -437,10 +439,11 @@ export function DeepBookTrading() {
                 selectedPriceFromOrderBook={selectedPriceFromOrderBook}
                 initialSide={tradeDrawerSide}
                 compact
+                onOrderPlaced={() => setTimeout(() => setOrdersRefreshTrigger((t) => t + 1), 2000)}
               />
             </div>
             <div className="flex-1 min-h-[240px] overflow-hidden">
-              <AccountPanel poolName={selectedPool || ''} />
+              <AccountPanel poolName={selectedPool || ''} refreshTrigger={ordersRefreshTrigger} />
             </div>
           </div>
           {!currentAccount && (

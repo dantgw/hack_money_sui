@@ -8,9 +8,11 @@ import { Button } from './ui/button';
 
 interface AccountPanelProps {
     poolName: string;
+    /** When this value changes, orders will be refetched (e.g. after placing a new order) */
+    refreshTrigger?: number;
 }
 
-export function AccountPanel({ poolName }: AccountPanelProps) {
+export function AccountPanel({ poolName, refreshTrigger }: AccountPanelProps) {
     const [activeTab, setActiveTab] = useState<'orders' | 'orderHistory'>('orders');
     const currentAccount = useCurrentAccount();
     const client = useCurrentClient();
@@ -74,12 +76,12 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
         }
     }, [balanceManager, poolName, currentNetwork]);
 
-    // Fetch orders when balance manager / pool become available
+    // Fetch orders when balance manager / pool become available, or when refreshTrigger changes (e.g. after placing an order)
     useEffect(() => {
         if (balanceManager && poolName) {
             fetchOrders();
         }
-    }, [balanceManager, poolName, fetchOrders]);
+    }, [balanceManager, poolName, refreshTrigger, fetchOrders]);
 
     // Handle order cancellation
     const handleCancelOrder = async (order: Order) => {
