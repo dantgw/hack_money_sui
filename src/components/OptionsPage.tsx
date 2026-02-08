@@ -2,31 +2,12 @@ import { useState, useEffect } from "react";
 import { useCurrentAccount, useDAppKit, useCurrentNetwork } from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
-import { Button } from "./ui/button";
 import { ConnectButton } from "@mysten/dapp-kit-react";
-import { Loader2, Calendar, DollarSign, RefreshCw, Zap, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { VARUNA_CALL_OPTIONS_PACKAGE_ID, VARUNA_PUT_OPTIONS_PACKAGE_ID } from "../constants";
 import { getAllPools, createPermissionlessPool, POOL_CREATION_FEE_DEEP, DEEP_COIN_TYPE } from "../lib/deepbook";
-
-interface OptionPool {
-    id: string;
-    name: string;
-    type: "CALL" | "PUT";
-    strikePrice: number;
-    expirationDate: number;
-    baseAsset: string;
-    quoteAsset: string;
-    optionTokenType: string;
-    baseAssetType: string;
-    quoteAssetType: string;
-    packageId: string;
-    /** DeepBook pool name for price oracle (e.g. DEEP_SUI) */
-    deepbookPoolName: string;
-    /** Option token decimals (6 for CALL, 9 for PUT in this config) */
-    optionTokenDecimals?: number;
-}
+import { OptionsChain, type OptionPool } from "./OptionsChain";
+import { OptionsActionPanel } from "./OptionsActionPanel";
 
 // Example option pools - in production, these would be fetched from on-chain
 const PUBLISHED_OPTIONS: OptionPool[] = [
@@ -77,21 +58,21 @@ const PUBLISHED_OPTIONS: OptionPool[] = [
         deepbookPoolName: "DEEP_SUI",
         optionTokenDecimals: 6,
     },
-    // {
-    //     id: "0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c",
-    //     packageId: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427",
-    //     name: "PUT DEEP/SUI Strike 0.03",
-    //     type: "PUT",
-    //     strikePrice: 0.03,
-    //     expirationDate: 1798761600000, // Jan 1, 2027
-    //     baseAsset: "DEEP",
-    //     quoteAsset: "SUI",
-    //     optionTokenType: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427::put_deep_sui_30000000_exp20270101::PUT_DEEP_SUI_30000000_EXP20270101",
-    //     baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
-    //     quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
-    //     deepbookPoolName: "DEEP_SUI",
-    //     optionTokenDecimals: 9,
-    // },
+    {
+        id: "0x4cec5d3862ce4d9cd868e31d5afe48c16ad7345cf923c4bcd817e7672deb8b4c",
+        packageId: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427",
+        name: "PUT DEEP/SUI Strike 0.03",
+        type: "PUT",
+        strikePrice: 0.03,
+        expirationDate: 1798761600000, // Jan 1, 2027
+        baseAsset: "DEEP",
+        quoteAsset: "SUI",
+        optionTokenType: "0x1c33e5c040eb0d23fe7a8f42724beaaeaa1c901f8b5f2047ef74d5c84b8b4427::put_deep_sui_30000000_exp20270101::PUT_DEEP_SUI_30000000_EXP20270101",
+        baseAssetType: "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP", // testnet
+        quoteAssetType: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI", // testnet
+        deepbookPoolName: "DEEP_SUI",
+        optionTokenDecimals: 9,
+    },
 ];
 
 const PRICE_DECIMALS = 1_000_000_000;
@@ -100,6 +81,7 @@ export function OptionsPage() {
     const currentAccount = useCurrentAccount();
     const dAppKit = useDAppKit();
     const currentNetwork = useCurrentNetwork();
+    const [selectedOption, setSelectedOption] = useState<OptionPool | null>(null);
     const [mintingPool, setMintingPool] = useState<string | null>(null);
     const [collateralAmounts, setCollateralAmounts] = useState<Record<string, string>>({});
     const [poolId, setPoolId] = useState<string>("");
@@ -128,6 +110,16 @@ export function OptionsPage() {
     useEffect(() => {
         loadDeepbookPools();
     }, [currentNetwork]);
+
+    // Auto-select option token in Create Pool form when user clicks an option in the chain
+    useEffect(() => {
+        if (selectedOption) {
+            setCreatePoolForm((prev) => ({
+                ...prev,
+                baseAssetType: selectedOption.optionTokenType,
+            }));
+        }
+    }, [selectedOption?.id]);
 
     // Fetch user's option token and owner token balances for each pool
     const loadUserTokenBalances = async () => {
@@ -674,278 +666,68 @@ export function OptionsPage() {
     };
 
     return (
-        <div className="h-full min-h-0 overflow-auto p-4 sm:p-6 bg-background">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-3xl font-bold">Options Management</h2>
-                        <p className="text-muted-foreground mt-1">
-                            Mint and trade options powered by Varuna
-                        </p>
-                    </div>
-                    {!currentAccount && <ConnectButton />}
+        <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden selection:bg-primary/30">
+            {/* Header */}
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b bg-background">
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-bold">Options Chain</h2>
+                    <p className="text-muted-foreground text-sm mt-0.5">
+                        Mint and trade options powered by Varuna
+                    </p>
+                </div>
+                {!currentAccount && <ConnectButton />}
+            </div>
+
+            {/* Main layout: Options Chain (left) + Action Panel (right) */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-svh">
+                {/* Options Chain */}
+                <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-r">
+                    {PUBLISHED_OPTIONS.length > 0 ? (
+                        <OptionsChain
+                            options={PUBLISHED_OPTIONS}
+                            selectedOption={selectedOption}
+                            onSelectOption={setSelectedOption}
+                            userTokenBalances={userTokenBalances}
+                            formatDate={formatDate}
+                            isExpired={isExpired}
+                        />
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center text-muted-foreground p-8">
+                            <p>No options available</p>
+                        </div>
+                    )}
                 </div>
 
-                {currentAccount && (
-                    <Card className="overflow-hidden">
-                        <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <PlusCircle className="h-5 w-5" />
-                                Create Permissionless DeepBook Pool
-                            </CardTitle>
-                            <CardDescription>
-                                Create a new DeepBook pool for any BaseAsset/QuoteAsset pair. Requires 500 DEEP as creation fee. Tick size, lot size, and min size must be powers of 10.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground uppercase font-bold">Base Asset Type</label>
-                                    <input
-                                        type="text"
-                                        value={createPoolForm.baseAssetType}
-                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, baseAssetType: e.target.value }))}
-                                        placeholder="0x...::module::TYPE"
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm font-mono focus:ring-1 focus:ring-primary outline-none"
-                                    />
-                                    {PUBLISHED_OPTIONS.length > 0 && (
-                                        <select
-                                            className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                            onChange={(e) => {
-                                                const opt = PUBLISHED_OPTIONS.find((o) => o.optionTokenType === e.target.value);
-                                                if (opt) setCreatePoolForm((p) => ({ ...p, baseAssetType: opt.optionTokenType }));
-                                            }}
-                                        >
-                                            <option value="">Or select option token...</option>
-                                            {PUBLISHED_OPTIONS.map((o) => (
-                                                <option key={o.id} value={o.optionTokenType}>{o.name}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground uppercase font-bold">Quote Asset Type</label>
-                                    <select
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                        value={createPoolForm.quoteAssetType}
-                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, quoteAssetType: e.target.value }))}
-                                    >
-                                        <option value="0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>
-                                        <option value="0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC">USDC (testnet)</option>
-                                        <option value="0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC">USDC (mainnet)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground uppercase font-bold">Tick Size</label>
-                                    <input
-                                        type="number"
-                                        value={createPoolForm.tickSize}
-                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, tickSize: parseInt(e.target.value) || 1000 }))}
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground uppercase font-bold">Lot Size (≥1000)</label>
-                                    <input
-                                        type="number"
-                                        value={createPoolForm.lotSize}
-                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, lotSize: parseInt(e.target.value) || 1000 }))}
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground uppercase font-bold">Min Size</label>
-                                    <input
-                                        type="number"
-                                        value={createPoolForm.minSize}
-                                        onChange={(e) => setCreatePoolForm((p) => ({ ...p, minSize: parseInt(e.target.value) || 10000 }))}
-                                        className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                    />
-                                </div>
-                            </div>
-                            <Button
-                                onClick={handleCreatePermissionlessPool}
-                                disabled={creatingPool || !createPoolForm.baseAssetType || !createPoolForm.quoteAssetType}
-                                loading={creatingPool}
-                            >
-                                {creatingPool ? "Creating..." : "Create Pool (500 DEEP)"}
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {PUBLISHED_OPTIONS.map((option) => (
-                        <Card key={option.id || option.name} className="overflow-hidden">
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-lg">{option.name}</CardTitle>
-                                        <CardDescription>
-                                            {option.type} Option • {option.baseAsset}/{option.quoteAsset}
-                                        </CardDescription>
-                                    </div>
-                                    <div
-                                        className={`px-2 py-1 rounded text-xs font-semibold ${option.type === "CALL"
-                                            ? "bg-green-500/20 text-green-600"
-                                            : "bg-red-500/20 text-red-600"
-                                            }`}
-                                    >
-                                        {option.type}
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground flex items-center gap-1">
-                                            <DollarSign className="h-3 w-3" />
-                                            Strike Price
-                                        </span>
-                                        <span className="font-medium">
-                                            {option.strikePrice} {option.quoteAsset}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            Expiration
-                                        </span>
-                                        <span className="font-medium">
-                                            {formatDate(option.expirationDate)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">Status</span>
-                                        <span
-                                            className={`font-medium ${isExpired(option.expirationDate)
-                                                ? "text-red-500"
-                                                : "text-green-500"
-                                                }`}
-                                        >
-                                            {isExpired(option.expirationDate) ? "Expired" : "Active"}
-                                        </span>
-                                    </div>
-                                    {currentAccount && userTokenBalances[option.id] && (
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-muted-foreground flex items-center gap-1">
-                                                <Zap className="h-3 w-3" />
-                                                Your Option Tokens
-                                            </span>
-                                            <span className="font-medium">
-                                                {userTokenBalances[option.id]}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {currentAccount ? (
-                                    <div className="space-y-3 pt-2 border-t">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleUpdatePrice(option)}
-                                            disabled={
-                                                updatingPricePool === option.id ||
-                                                isExpired(option.expirationDate) ||
-                                                !deepbookPools.has(option.deepbookPoolName)
-                                            }
-                                            className="w-full"
-                                        >
-                                            {updatingPricePool === option.id ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Updating...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <RefreshCw className="h-4 w-4" />
-                                                    Update Price
-                                                </>
-                                            )}
-                                        </Button>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs text-muted-foreground uppercase font-bold">
-                                                Collateral ({option.type === "CALL" ? option.baseAsset : option.quoteAsset})
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={collateralAmounts[option.id] ?? ""}
-                                                onChange={(e) => setCollateralAmounts((prev) => ({ ...prev, [option.id]: e.target.value }))}
-                                                placeholder="0.00"
-                                                className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                                disabled={mintingPool === option.id || isExpired(option.expirationDate)}
-                                            />
-                                        </div>
-                                        <Button
-                                            onClick={() => handleMintOptions(option)}
-                                            disabled={
-                                                mintingPool === option.id ||
-                                                isExpired(option.expirationDate) ||
-                                                !(collateralAmounts[option.id] ?? "") ||
-                                                parseFloat(collateralAmounts[option.id] ?? "0") <= 0
-                                            }
-                                            className="w-full"
-                                            loading={mintingPool === option.id}
-                                        >
-                                            {mintingPool === option.id ? "Minting..." : "Mint Options"}
-                                        </Button>
-
-                                        <div className="space-y-1.5 pt-2 border-t">
-                                            <label className="text-xs text-muted-foreground uppercase font-bold">
-                                                Exercise ({option.type === "CALL" ? `Pay ${option.quoteAsset}, get ${option.baseAsset}` : `Sell ${option.baseAsset}, get ${option.quoteAsset}`})
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={exerciseAmounts[option.id] ?? ""}
-                                                onChange={(e) => setExerciseAmounts((prev) => ({ ...prev, [option.id]: e.target.value }))}
-                                                placeholder="Amount to exercise"
-                                                className="w-full px-3 py-2 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                                                disabled={exercisingPool === option.id || isExpired(option.expirationDate)}
-                                            />
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() => handleExerciseOptions(option)}
-                                                disabled={
-                                                    exercisingPool === option.id ||
-                                                    isExpired(option.expirationDate) ||
-                                                    !(exerciseAmounts[option.id] ?? "") ||
-                                                    parseFloat(exerciseAmounts[option.id] ?? "0") <= 0
-                                                }
-                                                className="w-full"
-                                                loading={exercisingPool === option.id}
-                                            >
-                                                {exercisingPool === option.id ? (
-                                                    "Exercising..."
-                                                ) : (
-                                                    <>
-                                                        <Zap className="h-4 w-4" />
-                                                        Exercise Options
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="pt-2 border-t">
-                                        <div className="w-full [&>button]:w-full">
-                                            <ConnectButton />
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+                {/* Action Panel (right) — wrapper ensures border extends full height */}
+                <div className="flex flex-col min-h-0 border-l border-border lg:w-[320px] xl:w-[400px] shrink-0">
+                    <OptionsActionPanel
+                        selectedOption={selectedOption}
+                        currentAccount={currentAccount}
+                        collateralAmount={selectedOption ? (collateralAmounts[selectedOption.id] ?? "") : ""}
+                        onCollateralChange={(v) =>
+                            selectedOption && setCollateralAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                        }
+                        exerciseAmount={selectedOption ? (exerciseAmounts[selectedOption.id] ?? "") : ""}
+                        onExerciseAmountChange={(v) =>
+                            selectedOption && setExerciseAmounts((prev) => ({ ...prev, [selectedOption.id]: v }))
+                        }
+                        onMint={handleMintOptions}
+                        onExercise={handleExerciseOptions}
+                        onUpdatePrice={handleUpdatePrice}
+                        isMinting={selectedOption ? mintingPool === selectedOption.id : false}
+                        isExercising={selectedOption ? exercisingPool === selectedOption.id : false}
+                        isUpdatingPrice={selectedOption ? updatingPricePool === selectedOption.id : false}
+                        hasDeepbookPool={selectedOption ? deepbookPools.has(selectedOption.deepbookPoolName) : false}
+                        userBalance={selectedOption ? userTokenBalances[selectedOption.id] : undefined}
+                        formatDate={formatDate}
+                        isExpired={isExpired}
+                        createPoolForm={createPoolForm}
+                        onCreatePoolFormChange={setCreatePoolForm}
+                        onCreatePool={handleCreatePermissionlessPool}
+                        creatingPool={creatingPool}
+                        publishedOptions={PUBLISHED_OPTIONS}
+                    />
                 </div>
-
-                {PUBLISHED_OPTIONS.length === 0 && (
-                    <Card className="p-8 text-center">
-                        <p className="text-muted-foreground">No options available</p>
-                    </Card>
-                )}
             </div>
         </div>
     );
