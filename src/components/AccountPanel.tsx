@@ -151,7 +151,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 px-3 sm:px-4 py-2.5 sm:py-2 text-xs font-medium transition-colors border-b-2 -mb-px min-h-[44px] touch-manipulation ${activeTab === tab.id
+                        className={`flex-1 py-2.5 px-2 sm:p-2 text-xs font-medium transition-colors border-b-2 -mb-px min-h-[44px] touch-manipulation ${activeTab === tab.id
                             ? 'border-primary text-primary'
                             : 'border-transparent text-muted-foreground hover:text-foreground active:bg-muted/50'
                             }`}
@@ -161,7 +161,7 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                 ))}
             </div>
 
-            <div className="flex-1 overflow-auto p-3 sm:p-4">
+            <div className="flex-1 overflow-auto p-2 sm:p-2">
                 {activeTab === 'orders' && (
                     <div className="w-full">
                         {isLoadingOrders ? (
@@ -174,19 +174,19 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                 <p className="text-xs italic">Place an order to see it here</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto -mx-3 sm:mx-0">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-left text-[11px] sm:text-xs min-w-[640px]">
                                     <thead className="text-muted-foreground border-b uppercase tracking-tight">
                                         <tr>
-                                            <th className="pb-2 pr-2">Time</th>
-                                            <th className="pb-2 pr-2">Type</th>
-                                            <th className="pb-2 pr-2">Coin</th>
-                                            <th className="pb-2 pr-2">Direction</th>
-                                            <th className="pb-2 pr-2 text-right">Remaining Qty</th>
-                                            <th className="pb-2 pr-2 text-right">Original Qty</th>
-                                            <th className="pb-2 pr-2 text-right">Order Value</th>
-                                            <th className="pb-2 pr-2 text-right">Price</th>
-                                            <th className="pb-2 text-right">Action</th>
+                                            <th className="p-2 sm:p-1">Time</th>
+                                            <th className="p-2 sm:p-1">Type</th>
+                                            <th className="p-2 sm:p-1">Coin</th>
+                                            <th className="p-2 sm:p-1">Direction</th>
+                                            <th className="p-2 sm:p-1 text-right">Remaining Qty</th>
+                                            <th className="p-2 sm:p-1 text-right">Original Qty</th>
+                                            <th className="p-2 sm:p-1 text-right">Order Value</th>
+                                            <th className="p-2 sm:p-1 text-right">Price</th>
+                                            <th className="p-2 sm:p-1 text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -198,27 +198,27 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
 
                                             return (
                                                 <tr key={order.order_id} className="hover:bg-muted/50">
-                                                    <td className="py-2">{formatTime(order.timestamp)}</td>
-                                                    <td className="py-2 capitalize">{order.order_type}</td>
-                                                    <td className={`py-2 ${sideColor}`}>
+                                                    <td className="p-2 sm:p-1">{formatTime(order.timestamp)}</td>
+                                                    <td className="p-2 sm:p-1 capitalize">{order.order_type}</td>
+                                                    <td className={`p-2 sm:p-1 ${sideColor}`}>
                                                         {baseSymbol}/{quoteSymbol}
                                                     </td>
-                                                    <td className={`py-2 ${sideColor} capitalize`}>
+                                                    <td className={`p-2 sm:p-1 ${sideColor} capitalize`}>
                                                         {order.side === 'buy' ? 'Buy' : 'Sell'}
                                                     </td>
-                                                    <td className="py-2 text-right">{order.remaining_quantity.toFixed(4)}</td>
-                                                    <td className="py-2 text-right">{order.quantity.toFixed(4)}</td>
-                                                    <td className={`py-2 text-right ${sideColor}`}>
+                                                    <td className="p-2 sm:p-1 text-right">{order.remaining_quantity.toFixed(4)}</td>
+                                                    <td className="p-2 sm:p-1 text-right">{order.quantity.toFixed(4)}</td>
+                                                    <td className={`p-2 sm:p-1 text-right ${sideColor}`}>
                                                         {formatOrderValue(order.price, order.remaining_quantity, quoteSymbol)}
                                                     </td>
-                                                    <td className="py-2 text-right">{order.price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                                                    <td className="py-2 text-right">
+                                                    <td className="p-2 sm:p-1 text-right">{order.price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                                                    <td className="p-2 sm:p-1 text-right">
                                                         <Button
                                                             onClick={() => handleCancelOrder(order)}
                                                             disabled={isCanceling}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className={`h-7 text-xs cursor-pointer`}
+                                                            className="h-7 text-xs cursor-pointer"
                                                         >
                                                             {isCanceling ? (
                                                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -249,16 +249,16 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
                                 <p className="text-xs italic">Your past orders will appear here</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto -mx-3 sm:mx-0">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-left text-[11px] sm:text-xs min-w-[480px]">
                                     <thead className="text-muted-foreground border-b uppercase tracking-tight">
                                         <tr>
-                                            <th className="pb-2 pr-2">Time</th>
-                                            <th className="pb-2 pr-2">Coin</th>
-                                            <th className="pb-2 pr-2">Side</th>
-                                            <th className="pb-2 pr-2 text-right">Filled / Total</th>
-                                            <th className="pb-2 pr-2 text-right">Price</th>
-                                            <th className="pb-2 text-right">Status</th>
+                                            <th className="p-2 sm:p-1">Time</th>
+                                            <th className="p-2 sm:p-1">Coin</th>
+                                            <th className="p-2 sm:p-1">Side</th>
+                                            <th className="p-2 sm:p-1 text-right">Filled / Total</th>
+                                            <th className="p-2 sm:p-1 text-right">Price</th>
+                                            <th className="p-2 sm:p-1 text-right">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -269,23 +269,23 @@ export function AccountPanel({ poolName }: AccountPanelProps) {
 
                                             return (
                                                 <tr key={order.order_id} className="hover:bg-muted/50">
-                                                    <td className="py-2">{formatTime(order.timestamp)}</td>
-                                                    <td className={`py-2 ${sideColor}`}>
+                                                    <td className="p-2 sm:p-1">{formatTime(order.timestamp)}</td>
+                                                    <td className={`p-2 sm:p-1 ${sideColor}`}>
                                                         {baseSymbol}/{quoteSymbol}
                                                     </td>
-                                                    <td className={`py-2 ${sideColor} capitalize`}>
+                                                    <td className={`p-2 sm:p-1 ${sideColor} capitalize`}>
                                                         {order.side === 'buy' ? 'Buy' : 'Sell'}
                                                     </td>
-                                                    <td className="py-2 text-right">
+                                                    <td className="p-2 sm:p-1 text-right">
                                                         {order.filled_quantity.toFixed(4)} / {order.quantity.toFixed(4)}
                                                     </td>
-                                                    <td className="py-2 text-right">
+                                                    <td className="p-2 sm:p-1 text-right">
                                                         {order.price.toLocaleString('en-US', {
                                                             minimumFractionDigits: 1,
                                                             maximumFractionDigits: 1,
                                                         })}
                                                     </td>
-                                                    <td className="py-2 text-right capitalize">
+                                                    <td className="p-2 sm:p-1 text-right capitalize">
                                                         {order.status}
                                                     </td>
                                                 </tr>

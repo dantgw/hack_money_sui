@@ -7,9 +7,10 @@ interface BottomSheetProps {
     onClose: () => void;
     children: React.ReactNode;
     title?: React.ReactNode;
+    className?: string;
 }
 
-export function BottomSheet({ open, onClose, children, title }: BottomSheetProps) {
+export function BottomSheet({ open, onClose, children, title, className }: BottomSheetProps) {
     useEffect(() => {
         if (open) {
             document.body.style.overflow = "hidden";
@@ -50,7 +51,8 @@ export function BottomSheet({ open, onClose, children, title }: BottomSheetProps
                 className={cn(
                     "fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl bg-background shadow-2xl transition-transform duration-300 ease-out lg:hidden",
                     "max-h-[85vh]",
-                    open ? "translate-y-0" : "translate-y-full"
+                    open ? "translate-y-0" : "translate-y-full",
+                    className
                 )}
             >
                 {/* Drag handle */}

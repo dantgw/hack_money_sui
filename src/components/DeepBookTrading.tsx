@@ -8,7 +8,7 @@ import {
   PoolInfo,
   MarketPrice,
 } from '../lib/deepbook';
-import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import deepLogo from '../assets/deep-logo.png';
 import suiLogo from '../assets/sui-logo.png';
@@ -45,7 +45,6 @@ export function DeepBookTrading() {
   const [selectedPriceFromOrderBook, setSelectedPriceFromOrderBook] = useState<number | null>(null);
   const [tradeDrawerOpen, setTradeDrawerOpen] = useState(false);
   const [tradeDrawerSide, setTradeDrawerSide] = useState<'buy' | 'sell'>('buy');
-  const [orderBookExpanded, setOrderBookExpanded] = useState(false);
 
   useEffect(() => {
     const loadPools = async () => {
@@ -398,7 +397,7 @@ export function DeepBookTrading() {
         </div>
       </div>
 
-      {/* Mobile trade drawer — Order form + Order Book */}
+      {/* Mobile trade drawer — Order Book, Order form, Orders (taller, no expand) */}
       <BottomSheet
         open={tradeDrawerOpen}
         onClose={() => setTradeDrawerOpen(false)}
@@ -417,13 +416,21 @@ export function DeepBookTrading() {
             <span className="font-semibold text-lg">{selectedPoolInfo.baseCoin}-{selectedPoolInfo.quoteCoin}</span>
           </div>
         ) : undefined}
+        className="max-h-[92vh] min-h-[85vh]"
       >
-        <div className="relative flex flex-col min-h-[200px]">
+        <div className="relative flex flex-col min-h-[80vh]">
           <div className={cn(
-            "flex flex-col gap-2 pb-6 transition-all duration-200",
+            "flex flex-col flex-1 min-h-0",
             !currentAccount && "blur-sm pointer-events-none select-none"
           )}>
-            <div className="px-4">
+            <div className="border-b shrink-0 h-[240px] overflow-hidden">
+              <OrderBook
+                poolName={selectedPool || ''}
+                network={network}
+                onSelectPrice={(price) => setSelectedPriceFromOrderBook(price)}
+              />
+            </div>
+            <div className="border-b px-4 py-3 shrink-0">
               <OrderPanel
                 poolInfo={selectedPoolInfo || null}
                 currentPrice={marketPrice?.midPrice || 0}
@@ -432,32 +439,8 @@ export function DeepBookTrading() {
                 compact
               />
             </div>
-            <div className="border-t">
-              <button
-                type="button"
-                onClick={() => setOrderBookExpanded(!orderBookExpanded)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 active:bg-muted/50 transition-colors touch-manipulation"
-              >
-                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Order Book
-                </h4>
-                {orderBookExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                )}
-              </button>
-              {orderBookExpanded && (
-                <div className="min-h-[180px] max-h-[240px] overflow-auto">
-                  <OrderBook
-                    poolName={selectedPool || ''}
-                    network={network}
-                    onSelectPrice={(price) => {
-                      setSelectedPriceFromOrderBook(price);
-                    }}
-                  />
-                </div>
-              )}
+            <div className="flex-1 min-h-[240px] overflow-hidden">
+              <AccountPanel poolName={selectedPool || ''} />
             </div>
           </div>
           {!currentAccount && (
