@@ -28,11 +28,6 @@ function generateSimulatedData(
 
   switch (timeframe) {
 
-    case "1W":
-      startTime = now - 7 * 24 * 60 * 60 * 1000;
-      stepMs = 2 * 60 * 60 * 1000; // 2 hours
-      pointCount = 84;
-      break;
     case "1M":
       startTime = now - 30 * 24 * 60 * 60 * 1000;
       stepMs = 12 * 60 * 60 * 1000; // 12 hours
